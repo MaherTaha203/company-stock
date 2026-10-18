@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { isValidIsoDate, isValidUuid, parseMovementPagination, validateMovementFields } from "@/lib/inventory-validation.mjs";
+import { sanitizeApiError } from "@/lib/api-errors.mjs";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,9 @@ export async function GET(request: Request) {
     const movements = data ?? [];
     return NextResponse.json({ movements, hasMore: movements.length === pagination.limit, limit: pagination.limit, offset: pagination.offset });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "تعذر تحميل الحركات" }, { status: 500 });
+    console.error("GET /api/movements failed", error);
+    const safe = sanitizeApiError(error);
+    return NextResponse.json({ error: safe.message }, { status: safe.status });
   }
 }
 
@@ -61,6 +64,8 @@ export async function POST(request: Request) {
     }
     return NextResponse.json({ movement: data }, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "تعذر تسجيل الحركة" }, { status: 500 });
+    console.error("POST /api/movements failed", error);
+    const safe = sanitizeApiError(error);
+    return NextResponse.json({ error: safe.message }, { status: safe.status });
   }
 }
