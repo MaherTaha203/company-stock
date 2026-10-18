@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { isValidUuid, validateItemFields } from "@/lib/inventory-validation.mjs";
+import { sanitizeApiError } from "@/lib/api-errors.mjs";
 
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
@@ -34,7 +35,9 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     if (!data) return NextResponse.json({ error: "الصنف غير موجود." }, { status: 404 });
     return NextResponse.json({ item: data });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "تعذر تعديل الصنف" }, { status: 500 });
+    console.error("PATCH /api/items/[id] failed", error);
+    const safe = sanitizeApiError(error);
+    return NextResponse.json({ error: safe.message }, { status: safe.status });
   }
 }
 
@@ -51,6 +54,8 @@ export async function DELETE(_request: Request, context: { params: Promise<{ id:
     if (!data) return NextResponse.json({ error: "الصنف غير موجود." }, { status: 404 });
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "تعذر حذف الصنف" }, { status: 500 });
+    console.error("DELETE /api/items/[id] failed", error);
+    const safe = sanitizeApiError(error);
+    return NextResponse.json({ error: safe.message }, { status: safe.status });
   }
 }
