@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { isValidIsoDate, isValidUuid, parseMovementPagination, validateMovementFields } from "@/lib/inventory-validation.mjs";
-import { sanitizeApiError } from "@/lib/api-errors.mjs";
+import { isJsonObject, sanitizeApiError } from "@/lib/api-errors.mjs";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +39,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    if (!isJsonObject(body)) return NextResponse.json({ error: "بيانات الطلب غير صالحة." }, { status: 400 });
     const validationError = validateMovementFields({
       item_id: String(body.item_id ?? ""),
       movement_type: body.movement_type,
