@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
-import { isValidIsoDate, validateMovementFields } from "@/lib/inventory-validation.mjs";
+import { isValidIsoDate, isValidUuid, parseMovementPagination, validateMovementFields } from "@/lib/inventory-validation.mjs";
 
 export const dynamic = "force-dynamic";
 
@@ -15,15 +15,19 @@ export async function GET(request: Request) {
     if (to && !isValidIsoDate(to)) return NextResponse.json({ error: "تاريخ النهاية غير صالح." }, { status: 400 });
     if (from && to && from > to) return NextResponse.json({ error: "تاريخ البداية يجب ألا يتجاوز تاريخ النهاية." }, { status: 400 });
     if (type && type !== "all" && type !== "in" && type !== "out") return NextResponse.json({ error: "نوع الحركة غير صالح." }, { status: 400 });
+    if (itemId && !isValidUuid(itemId)) return NextResponse.json({ error: "معرّف الصنف غير صالح." }, { status: 400 });
+    const pagination = parseMovementPagination(url.searchParams.get("limit"), url.searchParams.get("offset"));
+    if ("error" in pagination) return NextResponse.json({ error: pagination.error }, { status: 400 });
     const db = getSupabaseAdmin();
-    let query = db.from("movements").select("id,item_id,movement_type,quantity,movement_date,notes,created_at,items(name,code,unit)").order("movement_date", { ascending: false }).order("created_at", { ascending: false }).limit(500);
+    let query = db.from("movements").select("id,item_id,movement_type,quantity,movement_date,notes,created_at,items(name,code,unit)").order("movement_date", { ascending: false }).order("created_at", { ascending: false }).order("id", { ascending: false }).range(pagination.offset, pagination.offset + pagination.limit - 1);
     if (itemId) query = query.eq("item_id", itemId);
     if (type === "in" || type === "out") query = query.eq("movement_type", type);
     if (from) query = query.gte("movement_date", from);
     if (to) query = query.lte("movement_date", to);
     const { data, error } = await query;
     if (error) throw error;
-    return NextResponse.json({ movements: data ?? [] });
+    const movements = data ?? [];
+    return NextResponse.json({ movements, hasMore: movements.length === pagination.limit, limit: pagination.limit, offset: pagination.offset });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "تعذر تحميل الحركات" }, { status: 500 });
   }
