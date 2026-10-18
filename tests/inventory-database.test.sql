@@ -43,6 +43,18 @@ BEGIN
   END IF;
 
   BEGIN
+    PERFORM public.record_stock_movement(v_item_id, 'in', 1.2345, current_date, 'must fail precision');
+    RAISE EXCEPTION 'TEST_EXPECTED_INVALID_QUANTITY';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM = 'TEST_EXPECTED_INVALID_QUANTITY' THEN
+      RAISE;
+    END IF;
+    IF SQLERRM NOT LIKE '%INVALID_QUANTITY%' THEN
+      RAISE EXCEPTION 'Unexpected error for excessive precision: %', SQLERRM;
+    END IF;
+  END;
+
+  BEGIN
     UPDATE public.items SET unit = 'kg' WHERE id = v_item_id;
     RAISE EXCEPTION 'TEST_EXPECTED_UNIT_GUARD';
   EXCEPTION WHEN OTHERS THEN
