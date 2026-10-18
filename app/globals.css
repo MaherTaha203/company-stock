@@ -94,3 +94,163 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   .stat-card strong{font-size:21px}
   .action-card{padding:10px}
 }
+
+
+/* Mobile form sizing: prevent iOS focus zoom and make date controls easier to use */
+.data-form input,
+.data-form select,
+.data-form textarea,
+.filters input,
+.filters select,
+.search-wrap input {
+  width: 100%;
+  min-width: 0;
+  font-size: 16px;
+}
+
+.data-form input[type="date"],
+.filters input[type="date"] {
+  min-height: 52px;
+  padding: 12px 14px;
+  line-height: 1.4;
+  direction: ltr;
+  text-align: left;
+  color: var(--ink);
+  background-color: #fff;
+  accent-color: var(--green);
+  -webkit-appearance: auto;
+  appearance: auto;
+  touch-action: manipulation;
+}
+
+@media (max-width: 700px) {
+  input,
+  select,
+  textarea,
+  .search-wrap input {
+    font-size: 16px;
+  }
+
+  .data-form input,
+  .data-form select,
+  .data-form textarea,
+  .filters input,
+  .filters select {
+    min-height: 50px;
+    padding: 12px 13px;
+  }
+
+  .data-form input[type="date"],
+  .filters input[type="date"] {
+    min-height: 54px;
+    padding: 13px 12px;
+    border-radius: 10px;
+  }
+
+  .data-form label,
+  .filters label {
+    gap: 8px;
+  }
+
+  .data-form input[type="date"]::-webkit-date-and-time-value,
+  .filters input[type="date"]::-webkit-date-and-time-value {
+    min-height: 1.4em;
+    text-align: left;
+  }
+
+  .data-form input[type="date"]::-webkit-calendar-picker-indicator,
+  .filters input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    padding: 5px;
+    margin: 0;
+  }
+}
+
+
+/* Keep stock movement controls inside their panels, including native date inputs. */
+.movement-form-panel,
+.movement-form-panel .data-form,
+.movement-form-panel .data-form label {
+  min-width: 0;
+  max-width: 100%;
+}
+.movement-form-panel .data-form label {
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr);
+}
+.movement-form-panel .data-form input,
+.movement-form-panel .data-form select,
+.movement-form-panel .data-form textarea,
+.filters label,
+.filters input,
+.filters select {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+.movement-form-panel .data-form input,
+.movement-form-panel .data-form select,
+.movement-form-panel .data-form textarea {
+  display: block;
+  width: 100%;
+  font-size: 16px;
+}
+.movement-form-panel .data-form input[type="date"],
+.filters input[type="date"] {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  font-size: 16px;
+  padding-inline: 10px;
+}
+@media (max-width: 700px) {
+  .movement-form-panel {
+    width: 100%;
+    min-width: 0;
+    padding: 13px;
+  }
+  .movement-form-panel .data-form {
+    width: 100%;
+    gap: 14px;
+  }
+  .movement-form-panel .data-form label {
+    gap: 7px;
+  }
+  .movement-form-panel .data-form input,
+  .movement-form-panel .data-form select,
+  .movement-form-panel .data-form textarea {
+    min-height: 52px;
+    padding: 12px 11px;
+    border-radius: 9px;
+  }
+  .movement-form-panel .data-form input[type="date"] {
+    min-height: 54px;
+    padding: 10px 8px;
+    direction: ltr;
+    text-align: left;
+    -webkit-appearance: auto;
+    appearance: auto;
+  }
+  .movement-form-panel .data-form input[type="date"]::-webkit-date-and-time-value {
+    min-width: 0;
+    text-align: left;
+  }
+  .movement-form-panel .data-form input[type="date"]::-webkit-calendar-picker-indicator {
+    padding: 3px;
+    margin: 0;
+  }
+  .filters {
+    align-items: stretch;
+  }
+  .filters label {
+    flex: 1 1 calc(50% - 6px);
+    min-width: 0;
+    max-width: none;
+  }
+  .filters input[type="date"] {
+    min-height: 54px;
+    padding: 10px 8px;
+  }
+}
