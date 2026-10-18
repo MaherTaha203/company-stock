@@ -1,16 +1,37 @@
-# Company Stock
+# Company Stock — إدارة مخزون المواد
 
-A simple Arabic right-to-left web app for tracking incoming materials, outgoing materials, and current stock.
+تطبيق ويب عربي بسيط لإدارة الوارد والصادر والأرصدة الحالية للمواد الصناعية.
 
-## Scope
-- Item catalog and opening balances
-- Incoming and outgoing stock movements
-- Current inventory and movement search
-- No user accounts, audit trail, or dedicated backup workflow
+## الوظائف
+- تعريف الأصناف ووحدة القياس والرصيد الافتتاحي.
+- تسجيل الوارد والصادر.
+- احتساب الرصيد الحالي من الرصيد الافتتاحي والحركات.
+- منع صرف كمية أكبر من المتوفر باستخدام دالة قاعدة بيانات ذرية.
+- البحث في الأصناف وتصفية الحركات حسب النوع والتاريخ.
+- واجهة RTL متجاوبة مع الهاتف والكمبيوتر.
 
-## Planned stack
-- Next.js
+## التقنية
+- Next.js 15 / React 19
 - Supabase PostgreSQL
-- Vercel deployment
+- Vercel (مقترح للنشر)
 
-Implementation will be added on a dedicated feature branch and tested before deployment.
+## إعداد قاعدة البيانات
+نفّذ ملف SQL الموجود في `supabase/migrations/202610180001_initial_inventory.sql` على مشروع Supabase المخصص لهذا التطبيق.
+
+## متغيرات البيئة
+أضفها في بيئة الخادم فقط، ولا تستخدم بادئة `NEXT_PUBLIC_` للمفتاح السري:
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+استخدم `.env.example` كقالب محلي. لا ترفع ملف `.env` إلى GitHub.
+
+## التشغيل المحلي
+```bash
+npm install
+cp .env.example .env.local
+npm run dev
+```
+أدخل عنوان مشروع Supabase والمفتاح السري في `.env.local` قبل تجربة وظائف البيانات.
+
+## ملاحظات الوصول
+لا يوجد تسجيل دخول بحسب نطاق المشروع الحالي. أي شخص يصل إلى رابط التطبيق يستطيع استخدام واجهته؛ لذلك لا تنشر الرابط علناً. المفتاح السري يبقى على الخادم ولا يُرسل إلى المتصفح، لكن واجهات API نفسها متاحة لمن يصل إلى التطبيق ما لم تُضف آلية تقييد وصول.
