@@ -41,7 +41,7 @@ jobs:
             echo "Applying $migration"
             psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$migration"
           done
-      - run: npm install
+      - run: npm ci
       - run: npm test
       - run: npm run test:db
       - run: bash tests/inventory-concurrency.test.sh
