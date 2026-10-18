@@ -94,3 +94,74 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   .stat-card strong{font-size:21px}
   .action-card{padding:10px}
 }
+
+
+/* Mobile form sizing: prevent iOS focus zoom and make date controls easier to use */
+.data-form input,
+.data-form select,
+.data-form textarea,
+.filters input,
+.filters select,
+.search-wrap input {
+  width: 100%;
+  min-width: 0;
+  font-size: 16px;
+}
+
+.data-form input[type="date"],
+.filters input[type="date"] {
+  min-height: 52px;
+  padding: 12px 14px;
+  line-height: 1.4;
+  direction: ltr;
+  text-align: left;
+  color: var(--ink);
+  background-color: #fff;
+  accent-color: var(--green);
+  -webkit-appearance: auto;
+  appearance: auto;
+  touch-action: manipulation;
+}
+
+@media (max-width: 700px) {
+  input,
+  select,
+  textarea,
+  .search-wrap input {
+    font-size: 16px;
+  }
+
+  .data-form input,
+  .data-form select,
+  .data-form textarea,
+  .filters input,
+  .filters select {
+    min-height: 50px;
+    padding: 12px 13px;
+  }
+
+  .data-form input[type="date"],
+  .filters input[type="date"] {
+    min-height: 54px;
+    padding: 13px 12px;
+    border-radius: 10px;
+  }
+
+  .data-form label,
+  .filters label {
+    gap: 8px;
+  }
+
+  .data-form input[type="date"]::-webkit-date-and-time-value,
+  .filters input[type="date"]::-webkit-date-and-time-value {
+    min-height: 1.4em;
+    text-align: left;
+  }
+
+  .data-form input[type="date"]::-webkit-calendar-picker-indicator,
+  .filters input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    padding: 5px;
+    margin: 0;
+  }
+}
