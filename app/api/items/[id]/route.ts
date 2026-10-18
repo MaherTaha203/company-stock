@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { isValidUuid, validateItemFields } from "@/lib/inventory-validation.mjs";
-import { sanitizeApiError } from "@/lib/api-errors.mjs";
+import { isJsonObject, sanitizeApiError } from "@/lib/api-errors.mjs";
 
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params;
     if (!isValidUuid(id)) return NextResponse.json({ error: "معرّف الصنف غير صالح." }, { status: 400 });
     const body = await request.json();
+    if (!isJsonObject(body)) return NextResponse.json({ error: "بيانات الطلب غير صالحة." }, { status: 400 });
     const validationError = validateItemFields(body, { partial: true });
     if (validationError) return NextResponse.json({ error: validationError }, { status: 400 });
     const update: Record<string, string> = {};
