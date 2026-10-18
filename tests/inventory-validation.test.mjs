@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import {
   hasAtMostThreeDecimals,
   isValidIsoDate,
+  MAX_STOCK_QUANTITY,
+  parseMovementPagination,
   isValidUuid,
   validateItemFields,
   validateMovementFields,
@@ -24,10 +26,21 @@ test("limits quantities to three decimal places", () => {
   assert.equal(hasAtMostThreeDecimals(Number.POSITIVE_INFINITY), false);
 });
 
+test("validates movement pagination limits and offsets", () => {
+  assert.deepEqual(parseMovementPagination(null, null), { limit: 500, offset: 0 });
+  assert.deepEqual(parseMovementPagination("25", "500"), { limit: 25, offset: 500 });
+  assert.match(parseMovementPagination("501", "0").error, /بين 1 و500/);
+  assert.match(parseMovementPagination("0", "0").error, /بين 1 و500/);
+  assert.match(parseMovementPagination("50", "-1").error, /غير صالح/);
+  assert.match(parseMovementPagination("50", "1.5").error, /غير صالح/);
+});
+
 test("validates item creation and partial updates", () => {
   assert.equal(validateItemFields({ code: "PK-1", name: "عبوات", unit: "حبة", opening_quantity: 0 }), null);
   assert.match(validateItemFields({ code: "", name: "عبوات", unit: "حبة", opening_quantity: 0 }), /رمز الصنف/);
   assert.match(validateItemFields({ code: "PK-1", name: "عبوات", unit: "حبة", opening_quantity: -1 }), /الرصيد الافتتاحي/);
+  assert.equal(validateItemFields({ code: "PK-2", name: "أقصى كمية", unit: "حبة", opening_quantity: MAX_STOCK_QUANTITY }), null);
+  assert.match(validateItemFields({ code: "PK-3", name: "كمية أكبر", unit: "حبة", opening_quantity: MAX_STOCK_QUANTITY + 1 }), /99,999,999,999.999/);
   assert.equal(validateItemFields({ name: "اسم جديد" }, { partial: true }), null);
   assert.match(validateItemFields({ name: " " }, { partial: true }), /اسم الصنف/);
   assert.equal(validateItemFields({}, { partial: true }), null);
@@ -40,6 +53,8 @@ test("validates movement type, UUID, positive quantity, date and notes", () => {
   assert.equal(validateMovementFields(valid), null);
   assert.match(validateMovementFields({ ...valid, quantity: 0 }), /الكمية/);
   assert.match(validateMovementFields({ ...valid, quantity: 1.2345 }), /ثلاث منازل/);
+  assert.equal(validateMovementFields({ ...valid, quantity: MAX_STOCK_QUANTITY }), null);
+  assert.match(validateMovementFields({ ...valid, quantity: MAX_STOCK_QUANTITY + 1 }), /99,999,999,999.999/);
   assert.match(validateMovementFields({ ...valid, movement_type: "transfer" }), /نوع حركة/);
   assert.match(validateMovementFields({ ...valid, movement_date: "2026-02-30" }), /تاريخ الحركة/);
   assert.match(validateMovementFields({ ...valid, notes: "x".repeat(1001) }), /الملاحظات/);

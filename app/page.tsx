@@ -44,10 +44,17 @@ export default function Home() {
   }, []);
 
   const loadMovements = useCallback(async () => {
-    const response = await fetch("/api/movements", { cache: "no-store" });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || "تعذر تحميل الحركات");
-    setMovements(result.movements || []);
+    const allMovements: Movement[] = [];
+    const limit = 500;
+    for (let offset = 0; ; offset += limit) {
+      const response = await fetch(`/api/movements?limit=${limit}&offset=${offset}`, { cache: "no-store" });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "تعذر تحميل الحركات");
+      const batch: Movement[] = result.movements || [];
+      allMovements.push(...batch);
+      if (!result.hasMore || batch.length === 0) break;
+    }
+    setMovements(allMovements);
   }, []);
 
   const refresh = useCallback(async () => {
