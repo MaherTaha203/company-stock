@@ -13,7 +13,7 @@ type Movement = {
   items?: { name: string; code: string; unit: string } | null;
 };
 type Tab = "dashboard" | "in" | "out" | "items" | "movements";
-const today = () => new Date().toLocaleDateString("en-CA");
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 
 export default function Home() {
   const [tab, setTab] = useState<Tab>("dashboard");
@@ -44,15 +44,11 @@ export default function Home() {
   }, []);
 
   const loadMovements = useCallback(async () => {
-    const params = new URLSearchParams();
-    if (movementFilter !== "all") params.set("type", movementFilter);
-    if (dateFrom) params.set("from", dateFrom);
-    if (dateTo) params.set("to", dateTo);
-    const response = await fetch("/api/movements?" + params.toString(), { cache: "no-store" });
+    const response = await fetch("/api/movements", { cache: "no-store" });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "تعذر تحميل الحركات");
     setMovements(result.movements || []);
-  }, [movementFilter, dateFrom, dateTo]);
+  }, []);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -67,6 +63,13 @@ export default function Home() {
     if (!formItem && items.length) setFormItem(items[0].id);
     if (formItem && !items.some((item) => item.id === formItem)) setFormItem(items[0]?.id || "");
   }, [items, formItem]);
+
+  const visibleMovements = useMemo(() => movements.filter((movement) => {
+    if (movementFilter !== "all" && movement.movement_type !== movementFilter) return false;
+    if (dateFrom && movement.movement_date < dateFrom) return false;
+    if (dateTo && movement.movement_date > dateTo) return false;
+    return true;
+  }), [movements, movementFilter, dateFrom, dateTo]);
 
   const filteredItems = useMemo(() => {
     const term = search.trim().toLocaleLowerCase();
@@ -220,8 +223,8 @@ export default function Home() {
       {tab === "movements" && <section className="panel"><div className="panel-heading"><div><h2>حركة المواد</h2><p>عرض عمليات الوارد والصادر المسجلة</p></div></div>
         <div className="filters"><label>نوع الحركة<select value={movementFilter} onChange={(e) => setMovementFilter(e.target.value)}><option value="all">كل الحركات</option><option value="in">وارد فقط</option><option value="out">صادر فقط</option></select></label><label>من تاريخ<input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}/></label><label>إلى تاريخ<input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}/></label><button className="secondary-button" onClick={() => { setMovementFilter("all"); setDateFrom(""); setDateTo(""); }}>مسح التصفية</button></div>
         <div className="table-wrap"><table><thead><tr><th>التاريخ</th><th>رمز الصنف</th><th>الصنف</th><th>النوع</th><th>الكمية</th><th>ملاحظات</th></tr></thead><tbody>
-          {movements.map((m) => <tr key={m.id}><td>{m.movement_date}</td><td>{m.items?.code || "—"}</td><td>{m.items?.name || "صنف"}</td><td><span className={"movement-badge " + (m.movement_type === "in" ? "in-badge" : "out-badge")}>{m.movement_type === "in" ? "وارد" : "صادر"}</span></td><td className="quantity-cell">{Number(m.quantity).toLocaleString("en-US")} {m.items?.unit || ""}</td><td>{m.notes || "—"}</td></tr>)}
-          {movements.length === 0 && <tr><td colSpan={6}><div className="empty-table">لا توجد حركات مطابقة.</div></td></tr>}
+          {visibleMovements.map((m) => <tr key={m.id}><td>{m.movement_date}</td><td>{m.items?.code || "—"}</td><td>{m.items?.name || "صنف"}</td><td><span className={"movement-badge " + (m.movement_type === "in" ? "in-badge" : "out-badge")}>{m.movement_type === "in" ? "وارد" : "صادر"}</span></td><td className="quantity-cell">{Number(m.quantity).toLocaleString("en-US")} {m.items?.unit || ""}</td><td>{m.notes || "—"}</td></tr>)}
+          {visibleMovements.length === 0 && <tr><td colSpan={6}><div className="empty-table">لا توجد حركات مطابقة.</div></td></tr>}
         </tbody></table></div><p className="table-footnote">يُعرض آخر 500 حركة مطابقة للبحث.</p>
       </section>}
       <footer className="page-footer">إدارة مخزون المواد <span>•</span> نظام بسيط للوارد والصادر</footer>
