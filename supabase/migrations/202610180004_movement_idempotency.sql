@@ -14,7 +14,7 @@ CREATE FUNCTION public.record_stock_movement(
   p_quantity numeric,
   p_movement_date date DEFAULT current_date,
   p_notes text DEFAULT null,
-  p_request_id uuid DEFAULT null
+  p_request_id uuid
 ) RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY INVOKER
@@ -26,6 +26,9 @@ DECLARE
   v_movement public.movements%rowtype;
   v_effective_date date := coalesce(p_movement_date, current_date);
 BEGIN
+  IF p_request_id IS NULL THEN
+    RAISE EXCEPTION 'INVALID_REQUEST_ID';
+  END IF;
   IF p_movement_type NOT IN ('in', 'out') THEN
     RAISE EXCEPTION 'INVALID_MOVEMENT_TYPE';
   END IF;
