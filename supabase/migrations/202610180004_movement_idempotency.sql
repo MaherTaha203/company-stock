@@ -6,7 +6,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS movements_request_id_unique_idx
   ON public.movements (request_id)
   WHERE request_id IS NOT NULL;
 
-DROP FUNCTION IF EXISTS public.record_stock_movement(uuid, text, numeric, date, text);
+-- Keep the existing five-argument function during rollout so the currently deployed app remains compatible.
+-- The updated API calls the new six-argument overload with a required request ID.
 
 CREATE FUNCTION public.record_stock_movement(
   p_item_id uuid,
