@@ -3,6 +3,10 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
+function hasAtMostThreeDecimals(value: number): boolean {
+  return Number.isFinite(value) && Math.abs(value * 1000 - Math.round(value * 1000)) < 1e-7;
+}
+
 export async function GET() {
   try {
     const db = getSupabaseAdmin();
@@ -22,7 +26,8 @@ export async function POST(request: Request) {
     const unit = String(body.unit ?? "").trim();
     const opening = Number(body.opening_quantity ?? 0);
     if (!code || !name || !unit) return NextResponse.json({ error: "أدخل رمز الصنف واسمه ووحدة القياس." }, { status: 400 });
-    if (!Number.isFinite(opening) || opening < 0) return NextResponse.json({ error: "الرصيد الافتتاحي يجب أن يكون صفراً أو أكثر." }, { status: 400 });
+    if (code.length > 100 || name.length > 200 || unit.length > 50) return NextResponse.json({ error: "تجاوز أحد الحقول الحد الأقصى للطول." }, { status: 400 });
+    if (!hasAtMostThreeDecimals(opening) || opening < 0) return NextResponse.json({ error: "الرصيد الافتتاحي يجب أن يكون صفراً أو أكثر وبحد أقصى ثلاث منازل عشرية." }, { status: 400 });
     const db = getSupabaseAdmin();
     const { data, error } = await db.from("items").insert({ code, name, unit, opening_quantity: opening }).select("id,code,name,unit,opening_quantity").single();
     if (error) {
