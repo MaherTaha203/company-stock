@@ -41,6 +41,6 @@ test("validates movement type, UUID, positive quantity, date and notes", () => {
   assert.match(validateMovementFields({ ...valid, quantity: 0 }), /الكمية/);
   assert.match(validateMovementFields({ ...valid, quantity: 1.2345 }), /ثلاث منازل/);
   assert.match(validateMovementFields({ ...valid, movement_type: "transfer" }), /نوع حركة/);
-  assert.match(validateMovementFields({ ...valid, movement_date: "2026-02-30" }), /التاريخ/);
+  assert.match(validateMovementFields({ ...valid, movement_date: "2026-02-30" }), /تاريخ الحركة/);
   assert.match(validateMovementFields({ ...valid, notes: "x".repeat(1001) }), /الملاحظات/);
 });
