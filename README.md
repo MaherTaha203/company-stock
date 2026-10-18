@@ -42,7 +42,8 @@ npm run dev
 - اربط مستودع GitHub بمشروع Vercel باستخدام Next.js.
 - أضف `SUPABASE_URL` و`SUPABASE_SERVICE_ROLE_KEY` في Environment Variables لبيئات Preview وProduction (وDevelopment عند الحاجة).
 - لا تنشر الإنتاج قبل نجاح البناء واختبار عمليات الصنف والوارد والصادر ومنع الرصيد السالب.
-- ملف GitHub Actions يشغّل `npm run typecheck` و`npm run build`.
+- ملف GitHub Actions يشغّل `npm test` و`npm run typecheck` و`npm run build`.
+- تم تثبيت إصدارات Next.js وReact على إصدارات تصحيح أمني؛ راجع `package.json` قبل أي ترقية جديدة.
 
 ## ملاحظات الوصول
 لا يوجد تسجيل دخول بحسب النطاق المتفق عليه. لذلك أي شخص يصل إلى رابط التطبيق يستطيع استخدام واجهته وواجهات API؛ لا تنشر الرابط علناً. المفتاح السري يبقى على الخادم ولا يُرسل إلى المتصفح، لكن هذا لا يمنع الآخرين من استخدام واجهات API. إذا أصبح الرابط متاحاً للعامة، يلزم تقييد الوصول قبل استخدام مخزون حقيقي.
