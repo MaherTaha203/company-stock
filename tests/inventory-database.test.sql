@@ -8,6 +8,9 @@ DECLARE
   v_balance numeric;
   v_unit text;
   v_movement_count integer;
+  v_request_id uuid;
+  v_first jsonb;
+  v_retry jsonb;
 BEGIN
   INSERT INTO public.items (code, name, unit, opening_quantity)
   VALUES ('CI-' || replace(gen_random_uuid()::text, '-', ''), 'CI inventory test item', 'piece', 0)
@@ -51,6 +54,32 @@ BEGIN
     END IF;
     IF SQLERRM NOT LIKE '%INVALID_QUANTITY%' THEN
       RAISE EXCEPTION 'Unexpected error for excessive precision: %', SQLERRM;
+    END IF;
+  END;
+
+  v_request_id := gen_random_uuid();
+  v_first := public.record_stock_movement(v_item_id, 'in', 1.000, current_date, 'retry-safe', v_request_id);
+  v_retry := public.record_stock_movement(v_item_id, 'in', 1.000, current_date, 'retry-safe', v_request_id);
+  IF v_first ->> 'id' IS DISTINCT FROM v_retry ->> 'id' THEN
+    RAISE EXCEPTION 'Retry created a different movement ID';
+  END IF;
+
+  SELECT current_quantity INTO v_balance
+  FROM public.stock_balances WHERE id = v_item_id;
+  SELECT count(*) INTO v_movement_count FROM public.movements WHERE item_id = v_item_id;
+  IF v_balance <> 9.000 OR v_movement_count <> 3 THEN
+    RAISE EXCEPTION 'Idempotent retry changed balance or duplicated movement: balance %, movements %', v_balance, v_movement_count;
+  END IF;
+
+  BEGIN
+    PERFORM public.record_stock_movement(v_item_id, 'in', 2.000, current_date, 'different payload', v_request_id);
+    RAISE EXCEPTION 'TEST_EXPECTED_IDEMPOTENCY_KEY_REUSED';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM = 'TEST_EXPECTED_IDEMPOTENCY_KEY_REUSED' THEN
+      RAISE;
+    END IF;
+    IF SQLERRM NOT LIKE '%IDEMPOTENCY_KEY_REUSED%' THEN
+      RAISE EXCEPTION 'Unexpected error for reused idempotency key: %', SQLERRM;
     END IF;
   END;
 
