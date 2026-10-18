@@ -1,16 +1,49 @@
-# Company Stock
+# Company Stock — إدارة مخزون المواد
 
-A simple Arabic right-to-left web app for tracking incoming materials, outgoing materials, and current stock.
+تطبيق ويب عربي لإدارة الوارد والصادر والأرصدة الحالية للمواد الصناعية.
 
-## Scope
-- Item catalog and opening balances
-- Incoming and outgoing stock movements
-- Current inventory and movement search
-- No user accounts, audit trail, or dedicated backup workflow
+## الوظائف
+- تعريف الأصناف ووحدة القياس والرصيد الافتتاحي.
+- تسجيل الوارد والصادر.
+- احتساب الرصيد الحالي من الرصيد الافتتاحي والحركات.
+- منع صرف كمية أكبر من المتوفر داخل معاملة ذرية في قاعدة البيانات.
+- قبول الكميات حتى ثلاث منازل عشرية فقط؛ التحقق موجود في الواجهة البرمجية وقاعدة البيانات.
+- البحث في الأصناف وتصفية الحركات حسب النوع والتاريخ.
+- واجهة RTL متجاوبة مع الهاتف والكمبيوتر.
 
-## Planned stack
-- Next.js
+## التقنية
+- Next.js 15 / React 19
 - Supabase PostgreSQL
-- Vercel deployment
+- Vercel
 
-Implementation will be added on a dedicated feature branch and tested before deployment.
+## إعداد قاعدة البيانات
+طبّق ملفات SQL الموجودة في `supabase/migrations/` **بالترتيب الرقمي** على مشروع Supabase المخصص للتطبيق:
+1. `202610180001_initial_inventory.sql`
+2. `202610180002_enforce_quantity_precision.sql`
+
+ملفات الترحيل لا تضيف أصنافاً أو حركات فعلية. اختبارات قاعدة البيانات التي أُجريت استخدمت معاملة مؤقتة انتهت بـ `ROLLBACK`.
+
+## متغيرات البيئة
+أضفها في بيئة الخادم فقط، ولا تستخدم بادئة `NEXT_PUBLIC_` للمفتاح السري:
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+استخدم `.env.example` كقالب محلي. لا ترفع ملف `.env` إلى GitHub. لا تشارك مفتاح `service_role` في المحادثات أو في كود المتصفح.
+
+## التشغيل المحلي
+```bash
+npm install
+cp .env.example .env.local
+npm run dev
+```
+أدخل عنوان مشروع Supabase والمفتاح السري في `.env.local` قبل تجربة وظائف البيانات.
+
+## النشر على Vercel
+- اربط مستودع GitHub بمشروع Vercel باستخدام Next.js.
+- أضف `SUPABASE_URL` و`SUPABASE_SERVICE_ROLE_KEY` في Environment Variables لبيئات Preview وProduction (وDevelopment عند الحاجة).
+- لا تنشر الإنتاج قبل نجاح البناء واختبار عمليات الصنف والوارد والصادر ومنع الرصيد السالب.
+- ملف GitHub Actions يشغّل `npm test` و`npm run typecheck` و`npm run build`.
+- تم تثبيت إصدارات Next.js وReact على إصدارات تصحيح أمني؛ راجع `package.json` قبل أي ترقية جديدة.
+
+## ملاحظات الوصول
+لا يوجد تسجيل دخول بحسب النطاق المتفق عليه. لذلك أي شخص يصل إلى رابط التطبيق يستطيع استخدام واجهته وواجهات API؛ لا تنشر الرابط علناً. المفتاح السري يبقى على الخادم ولا يُرسل إلى المتصفح، لكن هذا لا يمنع الآخرين من استخدام واجهات API. إذا أصبح الرابط متاحاً للعامة، يلزم تقييد الوصول قبل استخدام مخزون حقيقي.
