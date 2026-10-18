@@ -15,8 +15,19 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     if ("unit" in body) update.unit = body.unit.trim();
     if (Object.keys(update).length === 0) return NextResponse.json({ error: "لا توجد بيانات صالحة للتعديل." }, { status: 400 });
     const db = getSupabaseAdmin();
+    if (typeof update.unit === "string") {
+      const { data: existing, error: lookupError } = await db.from("items").select("unit").eq("id", id).maybeSingle();
+      if (lookupError) throw lookupError;
+      if (!existing) return NextResponse.json({ error: "الصنف غير موجود." }, { status: 404 });
+      if (existing.unit !== update.unit) {
+        const { data: priorMovement, error: movementLookupError } = await db.from("movements").select("id").eq("item_id", id).limit(1).maybeSingle();
+        if (movementLookupError) throw movementLookupError;
+        if (priorMovement) return NextResponse.json({ error: "لا يمكن تغيير وحدة القياس بعد تسجيل حركات للصنف." }, { status: 409 });
+      }
+    }
     const { data, error } = await db.from("items").update(update).eq("id", id).select("id,code,name,unit,opening_quantity").maybeSingle();
     if (error) {
+      if (error.message?.includes("ITEM_UNIT_IN_USE")) return NextResponse.json({ error: "لا يمكن تغيير وحدة القياس بعد تسجيل حركات للصنف." }, { status: 409 });
       if (error.code === "23505") return NextResponse.json({ error: "رمز الصنف مستخدم مسبقاً." }, { status: 409 });
       throw error;
     }
