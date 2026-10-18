@@ -21,6 +21,7 @@
 1. `202610180001_initial_inventory.sql`
 2. `202610180002_enforce_quantity_precision.sql`
 3. `202610180003_prevent_unit_change_with_movements.sql`
+4. `202610180004_movement_idempotency.sql`
 
 ملفات الترحيل لا تضيف أصنافاً أو حركات فعلية. يشغّل CI اختبارات قاعدة البيانات على PostgreSQL مؤقت ومعزول، وتُلغى بيانات اختبار الرصيد في نهاية الاختبار باستخدام `ROLLBACK`.
 
