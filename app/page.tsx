@@ -197,46 +197,46 @@ export default function Home() {
     } catch (e) { setError(e instanceof Error ? e.message : "تعذر حذف الصنف"); }
   }
 
-  const nav: { id: Tab; label: string; icon: string }[] = [
-    { id: "dashboard", label: "المخزون", icon: "▦" },
-    { id: "in", label: "وارد", icon: "↓" },
-    { id: "out", label: "صادر", icon: "↑" },
-    { id: "items", label: "الأصناف", icon: "▤" },
-    { id: "movements", label: "الحركات", icon: "↔" },
+  const nav: { id: Tab; label: string; icon: IconName }[] = [
+    { id: "dashboard", label: "المخزون", icon: "dashboard" },
+    { id: "in", label: "وارد", icon: "arrow-down" },
+    { id: "out", label: "صادر", icon: "arrow-up" },
+    { id: "items", label: "الأصناف", icon: "package" },
+    { id: "movements", label: "الحركات", icon: "history" },
   ];
   const selectedItem = items.find((item) => item.id === formItem);
 
   return <main className="app-shell">
     <aside className="sidebar">
-      <div className="brand"><div className="brand-icon">م</div><div><strong>مخزون المواد</strong><span>إدارة الوارد والصادر</span></div></div>
+      <div className="brand"><div className="brand-icon"><Icon name="package" size={24}/></div><div><strong>مخزون المواد</strong><span>إدارة الوارد والصادر</span></div></div>
       <nav className="nav-list" aria-label="القائمة الرئيسية">
         {nav.map((entry) => <button key={entry.id} className={"nav-button " + (tab === entry.id ? "active" : "")} onClick={() => { setTab(entry.id); setError(""); setNotice(""); }}>
-          <span className="nav-icon">{entry.icon}</span><span>{entry.label}</span>
+          <span className="nav-icon"><Icon name={entry.icon} size={21}/></span><span>{entry.label}</span>
         </button>)}
       </nav>
       <div className="sidebar-footer"><span className="status-dot"/> نظام المخزون البسيط</div>
     </aside>
 
     <section className="main-area">
-      <header className="topbar"><div><p className="eyebrow">إدارة المواد الصناعية</p><h1>{nav.find((entry) => entry.id === tab)?.label === "المخزون" ? "المخزون الحالي" : nav.find((entry) => entry.id === tab)?.label === "وارد" ? "تسجيل وارد" : nav.find((entry) => entry.id === tab)?.label === "صادر" ? "تسجيل صادر" : nav.find((entry) => entry.id === tab)?.label === "الأصناف" ? "إدارة الأصناف" : "حركة المخزون"}</h1></div><button className="refresh-button" onClick={() => void refresh()} title="تحديث البيانات">↻ <span>تحديث</span></button></header>
+      <header className="topbar"><div><p className="eyebrow">إدارة المواد الصناعية</p><h1>{nav.find((entry) => entry.id === tab)?.label === "المخزون" ? "المخزون الحالي" : nav.find((entry) => entry.id === tab)?.label === "وارد" ? "تسجيل وارد" : nav.find((entry) => entry.id === tab)?.label === "صادر" ? "تسجيل صادر" : nav.find((entry) => entry.id === tab)?.label === "الأصناف" ? "إدارة الأصناف" : "حركة المخزون"}</h1></div><button className="refresh-button" onClick={() => void refresh()} title="تحديث البيانات"><Icon name="refresh" size={18}/> <span>تحديث</span></button></header>
       {error && <div className="alert error" role="alert">{error}</div>}
       {notice && <div className="alert success" role="status">{notice}</div>}
       {loading && <div className="loading-bar">جارٍ تحميل البيانات...</div>}
 
       {tab === "dashboard" && <>
         <div className="stats-grid">
-          <article className="stat-card"><div className="stat-symbol blue">▦</div><span>عدد الأصناف</span><strong>{stats.count}</strong><small>صنف مسجل</small></article>
-          <article className="stat-card"><div className="stat-symbol green">↓</div><span>وارد اليوم</span><strong>{stats.incoming.toLocaleString("en-US")}</strong><small>وحدة</small></article>
-          <article className="stat-card"><div className="stat-symbol amber">↑</div><span>صادر اليوم</span><strong>{stats.outgoing.toLocaleString("en-US")}</strong><small>وحدة</small></article>
-          <article className="stat-card"><div className="stat-symbol slate">!</div><span>أرصدة صفرية</span><strong>{stats.low}</strong><small>صنف رصيده صفر أو أقل</small></article>
+          <article className="stat-card"><div className="stat-symbol blue"><Icon name="package" size={20}/></div><span>عدد الأصناف</span><strong>{stats.count}</strong><small>صنف مسجل</small></article>
+          <article className="stat-card"><div className="stat-symbol green"><Icon name="arrow-down" size={20}/></div><span>وارد اليوم</span><strong>{stats.incoming.toLocaleString("en-US")}</strong><small>وحدة</small></article>
+          <article className="stat-card"><div className="stat-symbol amber"><Icon name="arrow-up" size={20}/></div><span>صادر اليوم</span><strong>{stats.outgoing.toLocaleString("en-US")}</strong><small>وحدة</small></article>
+          <article className="stat-card"><div className="stat-symbol slate"><Icon name="alert" size={20}/></div><span>أرصدة صفرية</span><strong>{stats.low}</strong><small>صنف رصيده صفر أو أقل</small></article>
         </div>
         <div className="quick-actions">
-          <button className="action-card inbound" onClick={() => { setTab("in"); setError(""); setNotice(""); }}><span className="action-icon">↓</span><span><strong>تسجيل وارد جديد</strong><small>إضافة كمية إلى المخزون</small></span><b>←</b></button>
-          <button className="action-card outbound" onClick={() => { setTab("out"); setError(""); setNotice(""); }}><span className="action-icon">↑</span><span><strong>تسجيل صادر جديد</strong><small>خصم كمية من المخزون</small></span><b>←</b></button>
+          <button className="action-card inbound" onClick={() => { setTab("in"); setError(""); setNotice(""); }}><span className="action-icon"><Icon name="arrow-down" size={23}/></span><span><strong>تسجيل وارد جديد</strong><small>إضافة كمية إلى المخزون</small></span><b><Icon name="arrow-left" size={17}/></b></button>
+          <button className="action-card outbound" onClick={() => { setTab("out"); setError(""); setNotice(""); }}><span className="action-icon"><Icon name="arrow-up" size={23}/></span><span><strong>تسجيل صادر جديد</strong><small>خصم كمية من المخزون</small></span><b>←</b></button>
         </div>
         <section className="panel">
-          <div className="panel-heading"><div><h2>أرصدة الأصناف</h2><p>الكميات المتوفرة حالياً</p></div><button className="text-button" onClick={() => setTab("items")}>إدارة الأصناف ←</button></div>
-          <div className="search-wrap"><span>⌕</span><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ابحث باسم الصنف أو الرمز..." /></div>
+          <div className="panel-heading"><div><h2>أرصدة الأصناف</h2><p>الكميات المتوفرة حالياً</p></div><button className="text-button" onClick={() => setTab("items")}>إدارة الأصناف <Icon name="arrow-left" size={14}/></button></div>
+          <div className="search-wrap"><span><Icon name="search" size={18}/></span><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ابحث باسم الصنف أو الرمز..." /></div>
           <ItemsTable items={filteredItems} onEdit={editItem} onDelete={deleteItem}/>
         </section>
       </>}
@@ -254,7 +254,7 @@ export default function Home() {
             <button className={"primary-button " + (tab === "in" ? "green-button" : "orange-button")} type="submit" disabled={saving}>{saving ? "جارٍ الحفظ..." : tab === "in" ? "تأكيد استلام المواد" : "تأكيد صرف المواد"}</button>
           </form>}
         </section>
-        <aside className="helper-panel"><div className="helper-icon">{tab === "in" ? "↓" : "↑"}</div><h3>{tab === "in" ? "تسجيل الوارد" : "تسجيل الصادر"}</h3><p>{tab === "in" ? "تزداد كمية الصنف فور تسجيل الاستلام بنجاح." : "تنقص كمية الصنف فور تسجيل الصرف بنجاح."}</p><div className="helper-rule"><span>معادلة الرصيد</span><strong>الافتتاحي + الوارد − الصادر</strong></div></aside>
+        <aside className="helper-panel"><div className="helper-icon"><Icon name={tab === "in" ? "arrow-down" : "arrow-up"} size={24}/></div><h3>{tab === "in" ? "تسجيل الوارد" : "تسجيل الصادر"}</h3><p>{tab === "in" ? "تزداد كمية الصنف فور تسجيل الاستلام بنجاح." : "تنقص كمية الصنف فور تسجيل الصرف بنجاح."}</p><div className="helper-rule"><span>معادلة الرصيد</span><strong>الافتتاحي + الوارد − الصادر</strong></div></aside>
       </div>}
 
       {tab === "items" && <div className="items-layout">
@@ -282,9 +282,28 @@ export default function Home() {
   </main>;
 }
 
+
+type IconName = "dashboard" | "arrow-down" | "arrow-up" | "package" | "history" | "refresh" | "search" | "alert" | "arrow-left" | "edit" | "trash";
+function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
+  const common = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true as const };
+  switch (name) {
+    case "dashboard": return <svg {...common}><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="11" width="7" height="10" rx="1.5"/><rect x="3" y="13" width="7" height="8" rx="1.5"/></svg>;
+    case "arrow-down": return <svg {...common}><path d="M12 3v13m-6-6 6 6 6-6M5 21h14"/></svg>;
+    case "arrow-up": return <svg {...common}><path d="M12 21V8m-6 6 6-6 6 6M5 3h14"/></svg>;
+    case "package": return <svg {...common}><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="M3 8v9l9 5 9-5V8M12 13v9M7.5 5.5l9 5"/></svg>;
+    case "history": return <svg {...common}><path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5m4-1v5l3 2"/></svg>;
+    case "refresh": return <svg {...common}><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.5 9a7 7 0 0 1 11.7-2L20 12M4 12l2.8 5a7 7 0 0 0 11.7-2"/></svg>;
+    case "search": return <svg {...common}><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg>;
+    case "alert": return <svg {...common}><path d="m10.3 4.5-7 12.1A2 2 0 0 0 5 19.5h14a2 2 0 0 0 1.7-2.9l-7-12.1a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4m0 3h.01"/></svg>;
+    case "arrow-left": return <svg {...common}><path d="M19 12H5m7-7-7 7 7 7"/></svg>;
+    case "edit": return <svg {...common}><path d="m15 5 4 4M4 20l4-.8L19.2 8a2.1 2.1 0 0 0-3-3L5 16.2 4 20Z"/></svg>;
+    case "trash": return <svg {...common}><path d="M3 6h18m-2 0-.8 14H5.8L5 6m4 0V4h6v2m-5 4v6m4-6v6"/></svg>;
+  }
+}
+
 function ItemsTable({ items, onEdit, onDelete }: { items: Item[]; onEdit: (item: Item) => void; onDelete: (item: Item) => void }) {
   return <div className="table-wrap"><table><thead><tr><th>الرمز</th><th>اسم الصنف</th><th>الوحدة</th><th>الرصيد الحالي</th><th>إجراءات</th></tr></thead><tbody>
-    {items.map((item) => <tr key={item.id}><td><span className="item-code">{item.code}</span></td><td className="item-name">{item.name}</td><td>{item.unit}</td><td><span className={"stock-value " + (Number(item.current_quantity) <= 0 ? "zero-stock" : "")}>{Number(item.current_quantity).toLocaleString("en-US")}</span></td><td><div className="row-actions"><button onClick={() => onEdit(item)} className="small-button" title="تعديل">تعديل</button><button onClick={() => onDelete(item)} className="small-button delete-button" title="حذف">حذف</button></div></td></tr>)}
+    {items.map((item) => <tr key={item.id}><td><span className="item-code">{item.code}</span></td><td className="item-name">{item.name}</td><td>{item.unit}</td><td><span className={"stock-value " + (Number(item.current_quantity) <= 0 ? "zero-stock" : "")}>{Number(item.current_quantity).toLocaleString("en-US")}</span></td><td><div className="row-actions"><button onClick={() => onEdit(item)} className="small-button" title="تعديل" aria-label={"تعديل " + item.name}><Icon name="edit" size={15}/><span>تعديل</span></button><button onClick={() => onDelete(item)} className="small-button delete-button" title="حذف" aria-label={"حذف " + item.name}><Icon name="trash" size={15}/><span>حذف</span></button></div></td></tr>)}
     {items.length === 0 && <tr><td colSpan={5}><div className="empty-table">لا توجد أصناف. أضف أول صنف للبدء.</div></td></tr>}
   </tbody></table></div>;
 }
