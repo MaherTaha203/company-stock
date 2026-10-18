@@ -40,6 +40,8 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     if (!isJsonObject(body)) return NextResponse.json({ error: "بيانات الطلب غير صالحة." }, { status: 400 });
+    const requestId = body.request_id;
+    if (!isValidUuid(requestId)) return NextResponse.json({ error: "معرّف الطلب غير صالح." }, { status: 400 });
     const validationError = validateMovementFields({
       item_id: String(body.item_id ?? ""),
       movement_type: body.movement_type,
@@ -55,12 +57,14 @@ export async function POST(request: Request) {
       p_quantity: Number(body.quantity),
       p_movement_date: String(body.movement_date ?? new Date().toISOString().slice(0, 10)),
       p_notes: body.notes == null ? null : String(body.notes).trim() || null,
+      p_request_id: requestId,
     });
     if (error) {
       if (error.message.includes("INSUFFICIENT_STOCK")) return NextResponse.json({ error: "الكمية المطلوبة أكبر من الرصيد المتوفر." }, { status: 409 });
       if (error.message.includes("ITEM_NOT_FOUND")) return NextResponse.json({ error: "الصنف غير موجود." }, { status: 404 });
       if (error.message.includes("INVALID_QUANTITY")) return NextResponse.json({ error: "الكمية غير صالحة." }, { status: 400 });
       if (error.message.includes("INVALID_MOVEMENT_TYPE")) return NextResponse.json({ error: "نوع الحركة غير صالح." }, { status: 400 });
+      if (error.message.includes("IDEMPOTENCY_KEY_REUSED")) return NextResponse.json({ error: "معرّف الطلب مستخدم لحركة مختلفة." }, { status: 409 });
       throw error;
     }
     return NextResponse.json({ movement: data }, { status: 201 });
