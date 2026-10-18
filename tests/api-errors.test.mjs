@@ -17,3 +17,11 @@ test("malformed JSON gets a safe client error", () => {
     message: "صيغة الطلب غير صالحة.",
   });
 });
+
+test("only JSON objects are accepted as API request bodies", async () => {
+  const { isJsonObject } = await import("../lib/api-errors.mjs");
+  assert.equal(isJsonObject({ code: "A" }), true);
+  assert.equal(isJsonObject(null), false);
+  assert.equal(isJsonObject([]), false);
+  assert.equal(isJsonObject("text"), false);
+});
