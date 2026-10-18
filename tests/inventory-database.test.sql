@@ -6,6 +6,7 @@ DO $$
 DECLARE
   v_item_id uuid;
   v_balance numeric;
+  v_unit text;
   v_movement_count integer;
 BEGIN
   INSERT INTO public.items (code, name, unit, opening_quantity)
@@ -53,7 +54,10 @@ BEGIN
     END IF;
   END;
 
-  SELECT unit INTO STRICT v_balance FROM public.items WHERE id = v_item_id;
+  SELECT unit INTO STRICT v_unit FROM public.items WHERE id = v_item_id;
+  IF v_unit <> 'piece' THEN
+    RAISE EXCEPTION 'Unit changed despite historical movements: %', v_unit;
+  END IF;
 END;
 $$;
 
