@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type Item = {
   id: string; code: string; name: string; unit: string;
@@ -35,6 +35,7 @@ export default function Home() {
   const [name, setName] = useState("");
   const [unit, setUnit] = useState("حبة");
   const [opening, setOpening] = useState("0");
+  const movementRequestRef = useRef<{ id: string; fingerprint: string } | null>(null);
 
   const loadItems = useCallback(async () => {
     const response = await fetch("/api/items", { cache: "no-store" });
@@ -94,14 +95,35 @@ export default function Home() {
   async function submitMovement(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError(""); setNotice("");
     if (!formItem || !formQuantity || Number(formQuantity) <= 0) { setError("اختر الصنف وأدخل كمية أكبر من صفر."); return; }
+    const payload = {
+      item_id: formItem,
+      movement_type: tab === "in" ? "in" : "out",
+      quantity: Number(formQuantity),
+      movement_date: formDate,
+      notes: formNotes.trim() || null,
+    };
+    const fingerprint = JSON.stringify(payload);
+    let pendingRequest = movementRequestRef.current;
+    if (pendingRequest && pendingRequest.fingerprint !== fingerprint) {
+      setError("هناك محاولة سابقة لم تُحسم نتيجتها. أعد إرسال البيانات نفسها قبل تسجيل حركة مختلفة.");
+      return;
+    }
+    if (!pendingRequest) {
+      pendingRequest = { id: crypto.randomUUID(), fingerprint };
+      movementRequestRef.current = pendingRequest;
+    }
     setSaving(true);
     try {
       const response = await fetch("/api/movements", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ item_id: formItem, movement_type: tab === "in" ? "in" : "out", quantity: Number(formQuantity), movement_date: formDate, notes: formNotes }),
+        body: JSON.stringify({ ...payload, request_id: pendingRequest.id }),
       });
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "تعذر تسجيل الحركة");
+      if (!response.ok) {
+        movementRequestRef.current = null;
+        throw new Error(result.error || "تعذر تسجيل الحركة");
+      }
+      movementRequestRef.current = null;
       setNotice(tab === "in" ? "تم تسجيل الوارد وتحديث الرصيد." : "تم تسجيل الصادر وتحديث الرصيد.");
       setFormQuantity(""); setFormNotes("");
       await refresh();
