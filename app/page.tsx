@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type Item = {
   id: string; code: string; name: string; unit: string;
@@ -13,6 +13,23 @@ type Movement = {
   items?: { name: string; code: string; unit: string } | null;
 };
 type Tab = "dashboard" | "in" | "out" | "items" | "movements";
+type PendingMovementRequest = { id: string; fingerprint: string };
+const PENDING_MOVEMENT_STORAGE_KEY = "company-stock-pending-movement";
+function readPendingMovementRequest(): PendingMovementRequest | null {
+  try {
+    const value = window.sessionStorage.getItem(PENDING_MOVEMENT_STORAGE_KEY);
+    if (!value) return null;
+    const parsed = JSON.parse(value);
+    if (typeof parsed?.id === "string" && typeof parsed?.fingerprint === "string") return parsed;
+  } catch {}
+  return null;
+}
+function storePendingMovementRequest(value: PendingMovementRequest | null) {
+  try {
+    if (value) window.sessionStorage.setItem(PENDING_MOVEMENT_STORAGE_KEY, JSON.stringify(value));
+    else window.sessionStorage.removeItem(PENDING_MOVEMENT_STORAGE_KEY);
+  } catch {}
+}
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 
 export default function Home() {
@@ -35,6 +52,7 @@ export default function Home() {
   const [name, setName] = useState("");
   const [unit, setUnit] = useState("حبة");
   const [opening, setOpening] = useState("0");
+  const movementRequestRef = useRef<{ id: string; fingerprint: string } | null>(null);
 
   const loadItems = useCallback(async () => {
     const response = await fetch("/api/items", { cache: "no-store" });
@@ -94,14 +112,39 @@ export default function Home() {
   async function submitMovement(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError(""); setNotice("");
     if (!formItem || !formQuantity || Number(formQuantity) <= 0) { setError("اختر الصنف وأدخل كمية أكبر من صفر."); return; }
+    const payload = {
+      item_id: formItem,
+      movement_type: tab === "in" ? "in" : "out",
+      quantity: Number(formQuantity),
+      movement_date: formDate,
+      notes: formNotes.trim() || null,
+    };
+    const fingerprint = JSON.stringify(payload);
+    let pendingRequest = movementRequestRef.current ?? readPendingMovementRequest();
+    if (pendingRequest && pendingRequest.fingerprint !== fingerprint) {
+      setError("هناك محاولة سابقة لم تُحسم نتيجتها. أعد إرسال البيانات نفسها قبل تسجيل حركة مختلفة.");
+      return;
+    }
+    if (!pendingRequest) {
+      pendingRequest = { id: crypto.randomUUID(), fingerprint };
+      movementRequestRef.current = pendingRequest;
+    }
+    movementRequestRef.current = pendingRequest;
+    storePendingMovementRequest(pendingRequest);
     setSaving(true);
     try {
       const response = await fetch("/api/movements", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ item_id: formItem, movement_type: tab === "in" ? "in" : "out", quantity: Number(formQuantity), movement_date: formDate, notes: formNotes }),
+        body: JSON.stringify({ ...payload, request_id: pendingRequest.id }),
       });
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "تعذر تسجيل الحركة");
+      if (!response.ok) {
+        movementRequestRef.current = null;
+        storePendingMovementRequest(null);
+        throw new Error(result.error || "تعذر تسجيل الحركة");
+      }
+      movementRequestRef.current = null;
+      storePendingMovementRequest(null);
       setNotice(tab === "in" ? "تم تسجيل الوارد وتحديث الرصيد." : "تم تسجيل الصادر وتحديث الرصيد.");
       setFormQuantity(""); setFormNotes("");
       await refresh();
@@ -232,7 +275,7 @@ export default function Home() {
         <div className="table-wrap"><table><thead><tr><th>التاريخ</th><th>رمز الصنف</th><th>الصنف</th><th>النوع</th><th>الكمية</th><th>ملاحظات</th></tr></thead><tbody>
           {visibleMovements.map((m) => <tr key={m.id}><td>{m.movement_date}</td><td>{m.items?.code || "—"}</td><td>{m.items?.name || "صنف"}</td><td><span className={"movement-badge " + (m.movement_type === "in" ? "in-badge" : "out-badge")}>{m.movement_type === "in" ? "وارد" : "صادر"}</span></td><td className="quantity-cell">{Number(m.quantity).toLocaleString("en-US")} {m.items?.unit || ""}</td><td>{m.notes || "—"}</td></tr>)}
           {visibleMovements.length === 0 && <tr><td colSpan={6}><div className="empty-table">لا توجد حركات مطابقة.</div></td></tr>}
-        </tbody></table></div><p className="table-footnote">يُعرض آخر 500 حركة مطابقة للبحث.</p>
+        </tbody></table></div><p className="table-footnote">يُعرض جميع الحركات المطابقة للتصفية.</p>
       </section>}
       <footer className="page-footer">إدارة مخزون المواد <span>•</span> نظام بسيط للوارد والصادر</footer>
     </section>

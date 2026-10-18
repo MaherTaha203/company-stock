@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { validateItemFields } from "@/lib/inventory-validation.mjs";
+import { isJsonObject, sanitizeApiError } from "@/lib/api-errors.mjs";
 
 export const dynamic = "force-dynamic";
 
@@ -11,13 +12,16 @@ export async function GET() {
     if (error) throw error;
     return NextResponse.json({ items: data ?? [] });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "تعذر تحميل الأصناف" }, { status: 500 });
+    console.error("GET /api/items failed", error);
+    const safe = sanitizeApiError(error);
+    return NextResponse.json({ error: safe.message }, { status: safe.status });
   }
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    if (!isJsonObject(body)) return NextResponse.json({ error: "بيانات الطلب غير صالحة." }, { status: 400 });
     const code = String(body.code ?? "").trim();
     const name = String(body.name ?? "").trim();
     const unit = String(body.unit ?? "").trim();
@@ -32,6 +36,8 @@ export async function POST(request: Request) {
     }
     return NextResponse.json({ item: data }, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "تعذر إضافة الصنف" }, { status: 500 });
+    console.error("POST /api/items failed", error);
+    const safe = sanitizeApiError(error);
+    return NextResponse.json({ error: safe.message }, { status: safe.status });
   }
 }

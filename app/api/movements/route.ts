@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { isValidIsoDate, isValidUuid, parseMovementPagination, validateMovementFields } from "@/lib/inventory-validation.mjs";
+import { isJsonObject, sanitizeApiError } from "@/lib/api-errors.mjs";
 
 export const dynamic = "force-dynamic";
 
@@ -29,13 +30,18 @@ export async function GET(request: Request) {
     const movements = data ?? [];
     return NextResponse.json({ movements, hasMore: movements.length === pagination.limit, limit: pagination.limit, offset: pagination.offset });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "تعذر تحميل الحركات" }, { status: 500 });
+    console.error("GET /api/movements failed", error);
+    const safe = sanitizeApiError(error);
+    return NextResponse.json({ error: safe.message }, { status: safe.status });
   }
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    if (!isJsonObject(body)) return NextResponse.json({ error: "بيانات الطلب غير صالحة." }, { status: 400 });
+    const requestId = body.request_id;
+    if (!isValidUuid(requestId)) return NextResponse.json({ error: "معرّف الطلب غير صالح." }, { status: 400 });
     const validationError = validateMovementFields({
       item_id: String(body.item_id ?? ""),
       movement_type: body.movement_type,
@@ -51,16 +57,20 @@ export async function POST(request: Request) {
       p_quantity: Number(body.quantity),
       p_movement_date: String(body.movement_date ?? new Date().toISOString().slice(0, 10)),
       p_notes: body.notes == null ? null : String(body.notes).trim() || null,
+      p_request_id: requestId,
     });
     if (error) {
       if (error.message.includes("INSUFFICIENT_STOCK")) return NextResponse.json({ error: "الكمية المطلوبة أكبر من الرصيد المتوفر." }, { status: 409 });
       if (error.message.includes("ITEM_NOT_FOUND")) return NextResponse.json({ error: "الصنف غير موجود." }, { status: 404 });
       if (error.message.includes("INVALID_QUANTITY")) return NextResponse.json({ error: "الكمية غير صالحة." }, { status: 400 });
       if (error.message.includes("INVALID_MOVEMENT_TYPE")) return NextResponse.json({ error: "نوع الحركة غير صالح." }, { status: 400 });
+      if (error.message.includes("IDEMPOTENCY_KEY_REUSED")) return NextResponse.json({ error: "معرّف الطلب مستخدم لحركة مختلفة." }, { status: 409 });
       throw error;
     }
     return NextResponse.json({ movement: data }, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "تعذر تسجيل الحركة" }, { status: 500 });
+    console.error("POST /api/movements failed", error);
+    const safe = sanitizeApiError(error);
+    return NextResponse.json({ error: safe.message }, { status: safe.status });
   }
 }
