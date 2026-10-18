@@ -12,8 +12,8 @@ CREATE FUNCTION public.record_stock_movement(
   p_item_id uuid,
   p_movement_type text,
   p_quantity numeric,
-  p_movement_date date DEFAULT current_date,
-  p_notes text DEFAULT null,
+  p_movement_date date,
+  p_notes text,
   p_request_id uuid
 ) RETURNS jsonb
 LANGUAGE plpgsql
