@@ -9,6 +9,8 @@ DECLARE
   v_unit text;
   v_movement_count integer;
   v_request_id uuid;
+  v_in_request_id uuid;
+  v_out_request_id uuid;
   v_first jsonb;
   v_retry jsonb;
 BEGIN
@@ -16,8 +18,10 @@ BEGIN
   VALUES ('CI-' || replace(gen_random_uuid()::text, '-', ''), 'CI inventory test item', 'piece', 0)
   RETURNING id INTO v_item_id;
 
-  PERFORM public.record_stock_movement(v_item_id, 'in', 10.125, current_date, 'CI incoming');
-  PERFORM public.record_stock_movement(v_item_id, 'out', 2.125, current_date, 'CI outgoing');
+  v_in_request_id := gen_random_uuid();
+  v_out_request_id := gen_random_uuid();
+  PERFORM public.record_stock_movement(v_item_id, 'in', 10.125, current_date, 'CI incoming', v_in_request_id);
+  PERFORM public.record_stock_movement(v_item_id, 'out', 2.125, current_date, 'CI outgoing', v_out_request_id);
 
   SELECT current_quantity INTO v_balance
   FROM public.stock_balances WHERE id = v_item_id;
@@ -27,7 +31,7 @@ BEGIN
 
   SELECT count(*) INTO v_movement_count FROM public.movements WHERE item_id = v_item_id;
   BEGIN
-    PERFORM public.record_stock_movement(v_item_id, 'out', 9.000, current_date, 'must fail');
+    PERFORM public.record_stock_movement(v_item_id, 'out', 9.000, current_date, 'must fail', gen_random_uuid());
     RAISE EXCEPTION 'TEST_EXPECTED_INSUFFICIENT_STOCK';
   EXCEPTION WHEN OTHERS THEN
     IF SQLERRM = 'TEST_EXPECTED_INSUFFICIENT_STOCK' THEN
@@ -46,7 +50,7 @@ BEGIN
   END IF;
 
   BEGIN
-    PERFORM public.record_stock_movement(v_item_id, 'in', 1.2345, current_date, 'must fail precision');
+    PERFORM public.record_stock_movement(v_item_id, 'in', 1.2345, current_date, 'must fail precision', gen_random_uuid());
     RAISE EXCEPTION 'TEST_EXPECTED_INVALID_QUANTITY';
   EXCEPTION WHEN OTHERS THEN
     IF SQLERRM = 'TEST_EXPECTED_INVALID_QUANTITY' THEN
