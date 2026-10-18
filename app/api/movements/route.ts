@@ -1,17 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { isValidIsoDate, validateMovementFields } from "@/lib/inventory-validation.mjs";
 
 export const dynamic = "force-dynamic";
-
-function isValidDate(value: string): boolean {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-  const parsed = new Date(`${value}T00:00:00.000Z`);
-  return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
-}
-
-function hasAtMostThreeDecimals(value: number): boolean {
-  return Number.isFinite(value) && Math.abs(value * 1000 - Math.round(value * 1000)) < 1e-7;
-}
 
 export async function GET(request: Request) {
   try {
@@ -20,8 +11,8 @@ export async function GET(request: Request) {
     const type = url.searchParams.get("type");
     const from = url.searchParams.get("from");
     const to = url.searchParams.get("to");
-    if (from && !isValidDate(from)) return NextResponse.json({ error: "تاريخ البداية غير صالح." }, { status: 400 });
-    if (to && !isValidDate(to)) return NextResponse.json({ error: "تاريخ النهاية غير صالح." }, { status: 400 });
+    if (from && !isValidIsoDate(from)) return NextResponse.json({ error: "تاريخ البداية غير صالح." }, { status: 400 });
+    if (to && !isValidIsoDate(to)) return NextResponse.json({ error: "تاريخ النهاية غير صالح." }, { status: 400 });
     if (from && to && from > to) return NextResponse.json({ error: "تاريخ البداية يجب ألا يتجاوز تاريخ النهاية." }, { status: 400 });
     if (type && type !== "all" && type !== "in" && type !== "out") return NextResponse.json({ error: "نوع الحركة غير صالح." }, { status: 400 });
     const db = getSupabaseAdmin();
@@ -41,26 +32,21 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const itemId = String(body.item_id ?? "");
-    const movementType = body.movement_type;
-    const quantity = Number(body.quantity);
-    const movementDate = String(body.movement_date ?? new Date().toISOString().slice(0, 10));
-    const notes = String(body.notes ?? "").trim() || null;
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(itemId) || (movementType !== "in" && movementType !== "out")) {
-      return NextResponse.json({ error: "اختر صنفاً صحيحاً ونوع حركة صالحاً." }, { status: 400 });
-    }
-    if (!hasAtMostThreeDecimals(quantity) || quantity <= 0) {
-      return NextResponse.json({ error: "الكمية يجب أن تكون أكبر من صفر وبحد أقصى ثلاث منازل عشرية." }, { status: 400 });
-    }
-    if (!isValidDate(movementDate)) return NextResponse.json({ error: "تاريخ الحركة غير صالح." }, { status: 400 });
-    if (notes && notes.length > 1000) return NextResponse.json({ error: "الملاحظات تتجاوز الحد المسموح (1000 حرف)." }, { status: 400 });
+    const validationError = validateMovementFields({
+      item_id: String(body.item_id ?? ""),
+      movement_type: body.movement_type,
+      quantity: Number(body.quantity),
+      movement_date: String(body.movement_date ?? new Date().toISOString().slice(0, 10)),
+      notes: body.notes == null ? null : String(body.notes).trim() || null,
+    });
+    if (validationError) return NextResponse.json({ error: validationError }, { status: 400 });
     const db = getSupabaseAdmin();
     const { data, error } = await db.rpc("record_stock_movement", {
-      p_item_id: itemId,
-      p_movement_type: movementType,
-      p_quantity: quantity,
-      p_movement_date: movementDate,
-      p_notes: notes,
+      p_item_id: String(body.item_id),
+      p_movement_type: body.movement_type,
+      p_quantity: Number(body.quantity),
+      p_movement_date: String(body.movement_date ?? new Date().toISOString().slice(0, 10)),
+      p_notes: body.notes == null ? null : String(body.notes).trim() || null,
     });
     if (error) {
       if (error.message.includes("INSUFFICIENT_STOCK")) return NextResponse.json({ error: "الكمية المطلوبة أكبر من الرصيد المتوفر." }, { status: 409 });
