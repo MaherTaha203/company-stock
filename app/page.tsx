@@ -232,7 +232,7 @@ export default function Home() {
         <div className="table-wrap"><table><thead><tr><th>التاريخ</th><th>رمز الصنف</th><th>الصنف</th><th>النوع</th><th>الكمية</th><th>ملاحظات</th></tr></thead><tbody>
           {visibleMovements.map((m) => <tr key={m.id}><td>{m.movement_date}</td><td>{m.items?.code || "—"}</td><td>{m.items?.name || "صنف"}</td><td><span className={"movement-badge " + (m.movement_type === "in" ? "in-badge" : "out-badge")}>{m.movement_type === "in" ? "وارد" : "صادر"}</span></td><td className="quantity-cell">{Number(m.quantity).toLocaleString("en-US")} {m.items?.unit || ""}</td><td>{m.notes || "—"}</td></tr>)}
           {visibleMovements.length === 0 && <tr><td colSpan={6}><div className="empty-table">لا توجد حركات مطابقة.</div></td></tr>}
-        </tbody></table></div><p className="table-footnote">يُعرض آخر 500 حركة مطابقة للبحث.</p>
+        </tbody></table></div><p className="table-footnote">يُعرض جميع الحركات المطابقة للتصفية.</p>
       </section>}
       <footer className="page-footer">إدارة مخزون المواد <span>•</span> نظام بسيط للوارد والصادر</footer>
     </section>
