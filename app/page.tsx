@@ -13,6 +13,23 @@ type Movement = {
   items?: { name: string; code: string; unit: string } | null;
 };
 type Tab = "dashboard" | "in" | "out" | "items" | "movements";
+type PendingMovementRequest = { id: string; fingerprint: string };
+const PENDING_MOVEMENT_STORAGE_KEY = "company-stock-pending-movement";
+function readPendingMovementRequest(): PendingMovementRequest | null {
+  try {
+    const value = window.sessionStorage.getItem(PENDING_MOVEMENT_STORAGE_KEY);
+    if (!value) return null;
+    const parsed = JSON.parse(value);
+    if (typeof parsed?.id === "string" && typeof parsed?.fingerprint === "string") return parsed;
+  } catch {}
+  return null;
+}
+function storePendingMovementRequest(value: PendingMovementRequest | null) {
+  try {
+    if (value) window.sessionStorage.setItem(PENDING_MOVEMENT_STORAGE_KEY, JSON.stringify(value));
+    else window.sessionStorage.removeItem(PENDING_MOVEMENT_STORAGE_KEY);
+  } catch {}
+}
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 
 export default function Home() {
@@ -103,7 +120,7 @@ export default function Home() {
       notes: formNotes.trim() || null,
     };
     const fingerprint = JSON.stringify(payload);
-    let pendingRequest = movementRequestRef.current;
+    let pendingRequest = movementRequestRef.current ?? readPendingMovementRequest();
     if (pendingRequest && pendingRequest.fingerprint !== fingerprint) {
       setError("هناك محاولة سابقة لم تُحسم نتيجتها. أعد إرسال البيانات نفسها قبل تسجيل حركة مختلفة.");
       return;
@@ -112,6 +129,8 @@ export default function Home() {
       pendingRequest = { id: crypto.randomUUID(), fingerprint };
       movementRequestRef.current = pendingRequest;
     }
+    movementRequestRef.current = pendingRequest;
+    storePendingMovementRequest(pendingRequest);
     setSaving(true);
     try {
       const response = await fetch("/api/movements", {
@@ -121,9 +140,11 @@ export default function Home() {
       const result = await response.json();
       if (!response.ok) {
         movementRequestRef.current = null;
+        storePendingMovementRequest(null);
         throw new Error(result.error || "تعذر تسجيل الحركة");
       }
       movementRequestRef.current = null;
+      storePendingMovementRequest(null);
       setNotice(tab === "in" ? "تم تسجيل الوارد وتحديث الرصيد." : "تم تسجيل الصادر وتحديث الرصيد.");
       setFormQuantity(""); setFormNotes("");
       await refresh();
