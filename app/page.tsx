@@ -122,6 +122,27 @@ export default function Home() {
     low: items.filter((item) => Number(item.current_quantity) <= 0).length,
   }), [items, movements]);
 
+  const dayKeys = useMemo(() => {
+    const out: string[] = [];
+    const base = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(base); d.setDate(base.getDate() - i);
+      out.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
+    }
+    return out;
+  }, []);
+  const itemMeta = useMemo(() => {
+    const map = new Map<string, { last: string | null; trend: number[] }>();
+    for (const it of items) map.set(it.id, { last: null, trend: Array(7).fill(0) });
+    for (const m of movements) {
+      const e = map.get(m.item_id); if (!e) continue;
+      if (!e.last || m.movement_date > e.last) e.last = m.movement_date;
+      const idx = dayKeys.indexOf(m.movement_date);
+      if (idx >= 0) e.trend[idx] += Number(m.quantity);
+    }
+    return map;
+  }, [items, movements, dayKeys]);
+
   async function submitMovement(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError(""); setNotice("");
     if (!formItem || !formQuantity || Number(formQuantity) <= 0) { setError("اختر الصنف وأدخل كمية أكبر من صفر."); return; }
@@ -250,7 +271,7 @@ export default function Home() {
         <section className="panel">
           <div className="panel-heading"><div><h2>أرصدة الأصناف</h2><p>الكميات المتوفرة حالياً</p></div><button className="text-button" onClick={() => setTab("items")}>إدارة الأصناف <Icon name="arrow-left" size={14}/></button></div>
           <div className="search-wrap"><span><Icon name="search" size={18}/></span><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ابحث باسم الصنف أو الرمز..." /></div>
-          <ItemsTable items={filteredItems} onEdit={editItem} onDelete={deleteItem}/>
+          <ItemsTable items={filteredItems} meta={itemMeta} onEdit={editItem} onDelete={deleteItem}/>
         </section>
       </>}
 
@@ -280,7 +301,7 @@ export default function Home() {
             <button className="primary-button" type="submit" disabled={saving}>{saving ? "جارٍ الحفظ..." : "إضافة الصنف"}</button>
           </form>
         </section>
-        <section className="panel"><div className="panel-heading"><div><h2>الأصناف المسجلة</h2><p>{items.length} صنف</p></div></div><div className="search-wrap"><span>⌕</span><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ابحث عن صنف..." /></div><ItemsTable items={filteredItems} onEdit={editItem} onDelete={deleteItem}/></section>
+        <section className="panel"><div className="panel-heading"><div><h2>الأصناف المسجلة</h2><p>{items.length} صنف</p></div></div><div className="search-wrap"><span>⌕</span><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ابحث عن صنف..." /></div><ItemsTable items={filteredItems} meta={itemMeta} onEdit={editItem} onDelete={deleteItem}/></section>
       </div>}
 
       {tab === "movements" && <section className="panel"><div className="panel-heading"><div><h2>حركة المواد</h2><p>عرض عمليات الوارد والصادر المسجلة</p></div></div>
@@ -322,25 +343,82 @@ function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
   }
 }
 
-function ItemsTable({ items, onEdit, onDelete }: { items: Item[]; onEdit: (item: Item) => void; onDelete: (item: Item) => void }) {
+type SortKey = "code" | "name" | "incoming" | "outgoing" | "current";
+type ItemMeta = Map<string, { last: string | null; trend: number[] }>;
+const fmt = (n: number) => Number(n).toLocaleString("en-US");
+
+function Spark({ trend }: { trend: number[] }) {
+  const max = Math.max(...trend, 1), w = 58, h = 18, bw = w / trend.length;
+  return <svg className="spark" width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden="true">
+    {trend.map((v, i) => { const bh = Math.max(2, (Math.abs(v) / max) * (h - 2));
+      return <rect key={i} x={i * bw + 1} y={h - bh} width={bw - 2} height={bh} rx="1" fill={i === trend.length - 1 ? "var(--green)" : "var(--green-soft)"}/>; })}
+  </svg>;
+}
+
+function ItemsTable({ items, meta, onEdit, onDelete }: { items: Item[]; meta: ItemMeta; onEdit: (item: Item) => void; onDelete: (item: Item) => void }) {
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(50);
-  const pages = Math.max(1, Math.ceil(items.length / size));
-  useEffect(() => { setPage(0); }, [items.length, size]);
+  const [sort, setSort] = useState<{ key: SortKey; dir: number } | null>(null);
+  const [stat, setStat] = useState<"all" | "ok" | "zero">("all");
+
+  const rows = useMemo(() => {
+    let r = items.filter((it) => stat === "all" ? true : stat === "zero" ? Number(it.current_quantity) <= 0 : Number(it.current_quantity) > 0);
+    if (sort) {
+      const k = sort.key;
+      const val = (it: Item) => k === "code" ? it.code : k === "name" ? it.name
+        : Number(k === "incoming" ? it.incoming_quantity : k === "outgoing" ? it.outgoing_quantity : it.current_quantity);
+      r = [...r].sort((a, b) => { const av = val(a), bv = val(b); return (av > bv ? 1 : av < bv ? -1 : 0) * sort.dir; });
+    }
+    return r;
+  }, [items, stat, sort]);
+
+  const pages = Math.max(1, Math.ceil(rows.length / size));
+  useEffect(() => { setPage(0); }, [rows.length, size, stat]);
   const start = Math.min(page, pages - 1) * size;
-  const paged = items.slice(start, start + size);
+  const paged = rows.slice(start, start + size);
+  const toggleSort = (key: SortKey) => setSort((s) => s && s.key === key ? { key, dir: -s.dir } : { key, dir: 1 });
+  const arrow = (key: SortKey) => sort?.key === key ? <span className="ar">{sort.dir > 0 ? " ▲" : " ▼"}</span> : null;
+
   return <>
-    <div className="table-wrap scroll"><table><thead><tr><th>الرمز</th><th>اسم الصنف</th><th>الوحدة</th><th>الرصيد الحالي</th><th>إجراءات</th></tr></thead><tbody>
-    {paged.map((item) => <tr key={item.id}><td><span className="item-code">{item.code}</span></td><td className="item-name">{item.name}</td><td>{item.unit}</td><td><span className={"stock-value " + (Number(item.current_quantity) <= 0 ? "zero-stock" : "")}>{Number(item.current_quantity).toLocaleString("en-US")}</span></td><td><div className="row-actions"><button onClick={() => onEdit(item)} className="small-button" title="تعديل" aria-label={"تعديل " + item.name}><Icon name="edit" size={15}/><span>تعديل</span></button><button onClick={() => onDelete(item)} className="small-button delete-button" title="حذف" aria-label={"حذف " + item.name}><Icon name="trash" size={15}/><span>حذف</span></button></div></td></tr>)}
-    {items.length === 0 && <tr><td colSpan={5}><div className="empty-table">لا توجد أصناف. أضف أول صنف للبدء.</div></td></tr>}
+    <div className="statchips" role="group" aria-label="تصفية حسب الحالة">
+      <button type="button" className={"statchip " + (stat === "all" ? "on" : "")} onClick={() => setStat("all")}>الكل</button>
+      <button type="button" className={"statchip " + (stat === "ok" ? "on" : "")} onClick={() => setStat("ok")}>متوفر</button>
+      <button type="button" className={"statchip " + (stat === "zero" ? "on" : "")} onClick={() => setStat("zero")}>نافد</button>
+    </div>
+    <div className="table-wrap scroll"><table><thead><tr>
+      <th className="sortable" onClick={() => toggleSort("code")}>الرمز{arrow("code")}</th>
+      <th className="sortable" onClick={() => toggleSort("name")}>اسم الصنف{arrow("name")}</th>
+      <th>الوحدة</th>
+      <th className="sortable" onClick={() => toggleSort("incoming")}>وارد{arrow("incoming")}</th>
+      <th className="sortable" onClick={() => toggleSort("outgoing")}>صادر{arrow("outgoing")}</th>
+      <th className="sortable" onClick={() => toggleSort("current")}>الرصيد الحالي{arrow("current")}</th>
+      <th>اتجاه ٧ أيام</th>
+      <th>آخر حركة</th>
+      <th>الحالة</th>
+      <th>إجراءات</th>
+    </tr></thead><tbody>
+    {paged.map((item) => { const m = meta.get(item.id); const zero = Number(item.current_quantity) <= 0;
+      return <tr key={item.id}>
+        <td><span className="item-code">{item.code}</span></td>
+        <td className="item-name">{item.name}</td>
+        <td>{item.unit}</td>
+        <td className="num-cell num-in">{fmt(item.incoming_quantity)}</td>
+        <td className="num-cell num-out">{fmt(item.outgoing_quantity)}</td>
+        <td><span className={"stock-value " + (zero ? "zero-stock" : "")}>{fmt(item.current_quantity)}</span></td>
+        <td>{m ? <Spark trend={m.trend}/> : "—"}</td>
+        <td className="when-cell">{m?.last || "—"}</td>
+        <td><span className={"pill " + (zero ? "p-zero" : "p-ok")}>{zero ? "نافد" : "متوفر"}</span></td>
+        <td><div className="row-actions"><button onClick={() => onEdit(item)} className="small-button" title="تعديل" aria-label={"تعديل " + item.name}><Icon name="edit" size={15}/><span>تعديل</span></button><button onClick={() => onDelete(item)} className="small-button delete-button" title="حذف" aria-label={"حذف " + item.name}><Icon name="trash" size={15}/><span>حذف</span></button></div></td>
+      </tr>; })}
+    {rows.length === 0 && <tr><td colSpan={10}><div className="empty-table">لا توجد أصناف مطابقة.</div></td></tr>}
   </tbody></table></div>
-    {items.length > 0 && <div className="pager">
-      <span className="count">عرض <b>{start + 1}–{Math.min(start + size, items.length)}</b> من <b>{items.length.toLocaleString("en-US")}</b> صنف</span>
+    {rows.length > 0 && <div className="pager">
+      <span className="count">عرض <b>{start + 1}–{Math.min(start + size, rows.length)}</b> من <b>{rows.length.toLocaleString("en-US")}</b> صنف</span>
       <select className="page-size" value={size} onChange={(e) => setSize(Number(e.target.value))} aria-label="عدد الصفوف لكل صفحة"><option value={25}>٢٥ / صفحة</option><option value={50}>٥٠ / صفحة</option><option value={100}>١٠٠ / صفحة</option></select>
       <span className="sp"/>
       <button className="pbtn" type="button" onClick={() => setPage(Math.max(0, Math.min(page, pages - 1) - 1))} disabled={start === 0}>السابق</button>
       <span className="hint">صفحة {Math.min(page, pages - 1) + 1} من {pages}</span>
-      <button className="pbtn" type="button" onClick={() => setPage(Math.min(pages - 1, page + 1))} disabled={start + size >= items.length}>التالي</button>
+      <button className="pbtn" type="button" onClick={() => setPage(Math.min(pages - 1, page + 1))} disabled={start + size >= rows.length}>التالي</button>
     </div>}
   </>;
 }

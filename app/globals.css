@@ -314,3 +314,18 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   .table-wrap.scroll{max-height:none;border:0;border-radius:0}
   .app-shell thead th{position:static}
 }
+
+/* status filter chips + sortable headers + sparkline + status pills */
+.statchips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:13px}
+.statchip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 13px;font-size:12px;font-weight:600;color:#5c6b64;min-height:36px}
+.statchip.on{background:var(--green-soft);color:var(--green-dark);border-color:transparent}
+.app-shell th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
+.app-shell th.sortable:hover{color:var(--green-dark)}
+.app-shell th .ar{color:var(--green);font-size:10px}
+.spark{display:block}
+.num-cell{font-variant-numeric:tabular-nums;font-weight:600}
+.num-in{color:var(--green-dark)}.num-out{color:var(--orange)}
+.when-cell{color:#8b9791;font-size:.95em;direction:ltr;unicode-bidi:plaintext}
+.pill{font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;white-space:nowrap;display:inline-block}
+.p-ok{background:var(--green-soft);color:var(--green-dark)}
+.p-zero{background:#fbe1e1;color:#b4514f}
