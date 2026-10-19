@@ -53,6 +53,14 @@ export default function Home() {
   const [unit, setUnit] = useState("حبة");
   const [opening, setOpening] = useState("0");
   const movementRequestRef = useRef<{ id: string; fingerprint: string } | null>(null);
+  const [density, setDensity] = useState<"comfortable" | "compact">("comfortable");
+  const [movePage, setMovePage] = useState(0);
+  const [moveSize, setMoveSize] = useState(50);
+
+  useEffect(() => {
+    try { const d = window.localStorage.getItem("cs-density"); if (d === "compact" || d === "comfortable") setDensity(d); } catch {}
+  }, []);
+  const changeDensity = (d: "comfortable" | "compact") => { setDensity(d); try { window.localStorage.setItem("cs-density", d); } catch {} };
 
   const loadItems = useCallback(async () => {
     const response = await fetch("/api/items", { cache: "no-store" });
@@ -95,6 +103,11 @@ export default function Home() {
     if (dateTo && movement.movement_date > dateTo) return false;
     return true;
   }), [movements, movementFilter, dateFrom, dateTo]);
+
+  useEffect(() => { setMovePage(0); }, [movementFilter, dateFrom, dateTo, moveSize]);
+  const movePages = Math.max(1, Math.ceil(visibleMovements.length / moveSize));
+  const moveStart = Math.min(movePage, movePages - 1) * moveSize;
+  const pagedMovements = visibleMovements.slice(moveStart, moveStart + moveSize);
 
   const filteredItems = useMemo(() => {
     const term = search.trim().toLocaleLowerCase();
@@ -206,7 +219,7 @@ export default function Home() {
   ];
   const selectedItem = items.find((item) => item.id === formItem);
 
-  return <main className="app-shell">
+  return <main className="app-shell" data-density={density}>
     <aside className="sidebar">
       <div className="brand"><div className="brand-icon"><Icon name="package" size={24}/></div><div><strong>مخزون المواد</strong><span>إدارة الوارد والصادر</span></div></div>
       <nav className="nav-list" aria-label="القائمة الرئيسية">
@@ -218,7 +231,7 @@ export default function Home() {
     </aside>
 
     <section className="main-area">
-      <header className="topbar"><div><p className="eyebrow">إدارة المواد الصناعية</p><h1>{nav.find((entry) => entry.id === tab)?.label === "المخزون" ? "المخزون الحالي" : nav.find((entry) => entry.id === tab)?.label === "وارد" ? "تسجيل وارد" : nav.find((entry) => entry.id === tab)?.label === "صادر" ? "تسجيل صادر" : nav.find((entry) => entry.id === tab)?.label === "الأصناف" ? "إدارة الأصناف" : "حركة المخزون"}</h1></div><button className="refresh-button" onClick={() => void refresh()} title="تحديث البيانات"><Icon name="refresh" size={18}/> <span>تحديث</span></button></header>
+      <header className="topbar"><div><p className="eyebrow">إدارة المواد الصناعية</p><h1>{nav.find((entry) => entry.id === tab)?.label === "المخزون" ? "المخزون الحالي" : nav.find((entry) => entry.id === tab)?.label === "وارد" ? "تسجيل وارد" : nav.find((entry) => entry.id === tab)?.label === "صادر" ? "تسجيل صادر" : nav.find((entry) => entry.id === tab)?.label === "الأصناف" ? "إدارة الأصناف" : "حركة المخزون"}</h1></div><div className="topbar-actions"><div className="density-toggle" role="group" aria-label="كثافة العرض"><button type="button" className={density === "comfortable" ? "on" : ""} onClick={() => changeDensity("comfortable")}>مريح</button><button type="button" className={density === "compact" ? "on" : ""} onClick={() => changeDensity("compact")}>مضغوط</button></div><button className="refresh-button" onClick={() => void refresh()} title="تحديث البيانات"><Icon name="refresh" size={18}/> <span>تحديث</span></button></div></header>
       {error && <div className="alert error" role="alert">{error}</div>}
       {notice && <div className="alert success" role="status">{notice}</div>}
       {loading && <div className="loading-bar">جارٍ تحميل البيانات...</div>}
@@ -272,10 +285,18 @@ export default function Home() {
 
       {tab === "movements" && <section className="panel"><div className="panel-heading"><div><h2>حركة المواد</h2><p>عرض عمليات الوارد والصادر المسجلة</p></div></div>
         <div className="filters"><label>نوع الحركة<select value={movementFilter} onChange={(e) => setMovementFilter(e.target.value)}><option value="all">كل الحركات</option><option value="in">وارد فقط</option><option value="out">صادر فقط</option></select></label><label>من تاريخ<input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}/></label><label>إلى تاريخ<input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}/></label><button className="secondary-button" onClick={() => { setMovementFilter("all"); setDateFrom(""); setDateTo(""); }}>مسح التصفية</button></div>
-        <div className="table-wrap"><table><thead><tr><th>التاريخ</th><th>رمز الصنف</th><th>الصنف</th><th>النوع</th><th>الكمية</th><th>ملاحظات</th></tr></thead><tbody>
-          {visibleMovements.map((m) => <tr key={m.id}><td>{m.movement_date}</td><td>{m.items?.code || "—"}</td><td>{m.items?.name || "صنف"}</td><td><span className={"movement-badge " + (m.movement_type === "in" ? "in-badge" : "out-badge")}>{m.movement_type === "in" ? "وارد" : "صادر"}</span></td><td className="quantity-cell">{Number(m.quantity).toLocaleString("en-US")} {m.items?.unit || ""}</td><td>{m.notes || "—"}</td></tr>)}
+        <div className="table-wrap scroll"><table><thead><tr><th>التاريخ</th><th>رمز الصنف</th><th>الصنف</th><th>النوع</th><th>الكمية</th><th>ملاحظات</th></tr></thead><tbody>
+          {pagedMovements.map((m) => <tr key={m.id}><td>{m.movement_date}</td><td>{m.items?.code || "—"}</td><td>{m.items?.name || "صنف"}</td><td><span className={"movement-badge " + (m.movement_type === "in" ? "in-badge" : "out-badge")}>{m.movement_type === "in" ? "وارد" : "صادر"}</span></td><td className="quantity-cell">{Number(m.quantity).toLocaleString("en-US")} {m.items?.unit || ""}</td><td>{m.notes || "—"}</td></tr>)}
           {visibleMovements.length === 0 && <tr><td colSpan={6}><div className="empty-table">لا توجد حركات مطابقة.</div></td></tr>}
-        </tbody></table></div><p className="table-footnote">يُعرض جميع الحركات المطابقة للتصفية.</p>
+        </tbody></table></div>
+        <div className="pager">
+          <span className="count">عرض <b>{visibleMovements.length === 0 ? 0 : moveStart + 1}–{Math.min(moveStart + moveSize, visibleMovements.length)}</b> من <b>{visibleMovements.length.toLocaleString("en-US")}</b> حركة</span>
+          <select className="page-size" value={moveSize} onChange={(e) => setMoveSize(Number(e.target.value))} aria-label="عدد الصفوف لكل صفحة"><option value={25}>٢٥ / صفحة</option><option value={50}>٥٠ / صفحة</option><option value={100}>١٠٠ / صفحة</option></select>
+          <span className="sp"/>
+          <button className="pbtn" type="button" onClick={() => setMovePage((p) => Math.max(0, Math.min(p, movePages - 1) - 1))} disabled={moveStart === 0}>السابق</button>
+          <span className="hint">صفحة {Math.min(movePage, movePages - 1) + 1} من {movePages}</span>
+          <button className="pbtn" type="button" onClick={() => setMovePage((p) => Math.min(movePages - 1, p + 1))} disabled={moveStart + moveSize >= visibleMovements.length}>التالي</button>
+        </div>
       </section>}
       <footer className="page-footer">إدارة مخزون المواد <span>•</span> نظام بسيط للوارد والصادر</footer>
     </section>
@@ -302,8 +323,24 @@ function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
 }
 
 function ItemsTable({ items, onEdit, onDelete }: { items: Item[]; onEdit: (item: Item) => void; onDelete: (item: Item) => void }) {
-  return <div className="table-wrap"><table><thead><tr><th>الرمز</th><th>اسم الصنف</th><th>الوحدة</th><th>الرصيد الحالي</th><th>إجراءات</th></tr></thead><tbody>
-    {items.map((item) => <tr key={item.id}><td><span className="item-code">{item.code}</span></td><td className="item-name">{item.name}</td><td>{item.unit}</td><td><span className={"stock-value " + (Number(item.current_quantity) <= 0 ? "zero-stock" : "")}>{Number(item.current_quantity).toLocaleString("en-US")}</span></td><td><div className="row-actions"><button onClick={() => onEdit(item)} className="small-button" title="تعديل" aria-label={"تعديل " + item.name}><Icon name="edit" size={15}/><span>تعديل</span></button><button onClick={() => onDelete(item)} className="small-button delete-button" title="حذف" aria-label={"حذف " + item.name}><Icon name="trash" size={15}/><span>حذف</span></button></div></td></tr>)}
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState(50);
+  const pages = Math.max(1, Math.ceil(items.length / size));
+  useEffect(() => { setPage(0); }, [items.length, size]);
+  const start = Math.min(page, pages - 1) * size;
+  const paged = items.slice(start, start + size);
+  return <>
+    <div className="table-wrap scroll"><table><thead><tr><th>الرمز</th><th>اسم الصنف</th><th>الوحدة</th><th>الرصيد الحالي</th><th>إجراءات</th></tr></thead><tbody>
+    {paged.map((item) => <tr key={item.id}><td><span className="item-code">{item.code}</span></td><td className="item-name">{item.name}</td><td>{item.unit}</td><td><span className={"stock-value " + (Number(item.current_quantity) <= 0 ? "zero-stock" : "")}>{Number(item.current_quantity).toLocaleString("en-US")}</span></td><td><div className="row-actions"><button onClick={() => onEdit(item)} className="small-button" title="تعديل" aria-label={"تعديل " + item.name}><Icon name="edit" size={15}/><span>تعديل</span></button><button onClick={() => onDelete(item)} className="small-button delete-button" title="حذف" aria-label={"حذف " + item.name}><Icon name="trash" size={15}/><span>حذف</span></button></div></td></tr>)}
     {items.length === 0 && <tr><td colSpan={5}><div className="empty-table">لا توجد أصناف. أضف أول صنف للبدء.</div></td></tr>}
-  </tbody></table></div>;
+  </tbody></table></div>
+    {items.length > 0 && <div className="pager">
+      <span className="count">عرض <b>{start + 1}–{Math.min(start + size, items.length)}</b> من <b>{items.length.toLocaleString("en-US")}</b> صنف</span>
+      <select className="page-size" value={size} onChange={(e) => setSize(Number(e.target.value))} aria-label="عدد الصفوف لكل صفحة"><option value={25}>٢٥ / صفحة</option><option value={50}>٥٠ / صفحة</option><option value={100}>١٠٠ / صفحة</option></select>
+      <span className="sp"/>
+      <button className="pbtn" type="button" onClick={() => setPage(Math.max(0, Math.min(page, pages - 1) - 1))} disabled={start === 0}>السابق</button>
+      <span className="hint">صفحة {Math.min(page, pages - 1) + 1} من {pages}</span>
+      <button className="pbtn" type="button" onClick={() => setPage(Math.min(pages - 1, page + 1))} disabled={start + size >= items.length}>التالي</button>
+    </div>}
+  </>;
 }
