@@ -60,6 +60,9 @@ export default function Home() {
   const [opening, setOpening] = useState("0");
   const [category, setCategory] = useState("");
   const [reorder, setReorder] = useState("0");
+  const [editingItem, setEditingItem] = useState<Item | null>(null);
+  const [editForm, setEditForm] = useState({ code: "", name: "", unit: "", category: "", reorder_level: "0" });
+  const [editError, setEditError] = useState("");
   const movementRequestRef = useRef<{ id: string; fingerprint: string } | null>(null);
   const [density, setDensity] = useState<"comfortable" | "compact">("comfortable");
   const [movePage, setMovePage] = useState(0);
@@ -217,24 +220,45 @@ export default function Home() {
     finally { setSaving(false); }
   }
 
-  async function editItem(item: Item) {
-    const nextName = window.prompt("اسم الصنف", item.name);
-    if (nextName === null) return;
-    const nextUnit = window.prompt("وحدة القياس", item.unit);
-    if (nextUnit === null) return;
-    const nextCode = window.prompt("رمز الصنف", item.code);
-    if (nextCode === null) return;
-    const nextCategory = window.prompt("التصنيف (اختياري)", item.category ?? "");
-    if (nextCategory === null) return;
-    const nextReorder = window.prompt("نقطة إعادة الطلب", String(item.reorder_level ?? 0));
-    if (nextReorder === null) return;
-    setError(""); setNotice("");
+  function editItem(item: Item) {
+    setEditingItem(item);
+    setEditForm({ code: item.code, name: item.name, unit: item.unit, category: item.category ?? "", reorder_level: String(item.reorder_level ?? 0) });
+    setEditError("");
+    setError("");
+    setNotice("");
+  }
+
+  async function submitEditItem(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!editingItem) return;
+    if (!editForm.code.trim() || !editForm.name.trim() || !editForm.unit.trim()) {
+      setEditError("أدخل رمز الصنف واسمه ووحدة القياس.");
+      return;
+    }
+    setSaving(true);
+    setEditError("");
     try {
-      const response = await fetch("/api/items/" + item.id, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: nextName, unit: nextUnit, code: nextCode, category: nextCategory.trim() || null, reorder_level: Number(nextReorder) }) });
+      const response = await fetch("/api/items/" + editingItem.id, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: editForm.code.trim(),
+          name: editForm.name.trim(),
+          unit: editForm.unit.trim(),
+          category: editForm.category.trim() || null,
+          reorder_level: Number(editForm.reorder_level),
+        }),
+      });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "تعذر تعديل الصنف");
-      setNotice("تم تعديل بيانات الصنف."); await refresh();
-    } catch (e) { setError(e instanceof Error ? e.message : "تعذر تعديل الصنف"); }
+      setEditingItem(null);
+      setNotice("تم تعديل بيانات الصنف.");
+      await refresh();
+    } catch (e) {
+      setEditError(e instanceof Error ? e.message : "تعذر تعديل الصنف");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function deleteItem(item: Item) {
@@ -340,6 +364,20 @@ export default function Home() {
           <button className="pbtn" type="button" onClick={() => setMovePage((p) => Math.min(movePages - 1, p + 1))} disabled={moveStart + moveSize >= visibleMovements.length}>التالي</button>
         </div>
       </section>}
+      {editingItem && <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) setEditingItem(null); }}>
+        <section className="edit-modal" role="dialog" aria-modal="true" aria-labelledby="edit-item-title">
+          <div className="panel-heading"><div><h2 id="edit-item-title">تعديل بيانات الصنف</h2><p>تعديل بيانات التعريف فقط؛ لا يتغير الرصيد أو سجل الحركات.</p></div><button type="button" className="modal-close" aria-label="إغلاق" onClick={() => !saving && setEditingItem(null)} disabled={saving}>×</button></div>
+          {editError && <div className="alert error" role="alert">{editError}</div>}
+          <form className="data-form edit-item-form" onSubmit={submitEditItem}>
+            <label>رمز الصنف <input autoFocus required value={editForm.code} onChange={(e) => setEditForm((current) => ({ ...current, code: e.target.value }))} /></label>
+            <label>اسم الصنف <input required value={editForm.name} onChange={(e) => setEditForm((current) => ({ ...current, name: e.target.value }))} /></label>
+            <label>وحدة القياس <input required value={editForm.unit} onChange={(e) => setEditForm((current) => ({ ...current, unit: e.target.value }))} /><small className="field-help">لا يمكن تغيير الوحدة إذا كان للصنف حركات مسجلة.</small></label>
+            <label>التصنيف (اختياري) <input value={editForm.category} onChange={(e) => setEditForm((current) => ({ ...current, category: e.target.value }))} /></label>
+            <label>نقطة إعادة الطلب <input type="number" min="0" step="0.001" required value={editForm.reorder_level} onChange={(e) => setEditForm((current) => ({ ...current, reorder_level: e.target.value }))} /></label>
+            <div className="edit-modal-actions"><button type="button" className="secondary-button" onClick={() => setEditingItem(null)} disabled={saving}>إلغاء</button><button type="submit" className="primary-button" disabled={saving}>{saving ? "جارٍ الحفظ..." : "حفظ التعديلات"}</button></div>
+          </form>
+        </section>
+      </div>}
       <footer className="page-footer">إدارة مخزون المواد <span>•</span> نظام بسيط للوارد والصادر</footer>
     </section>
   </main>;
