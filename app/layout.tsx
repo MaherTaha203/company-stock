@@ -9,9 +9,9 @@ export const metadata: Metadata = {
   description: "نظام Company Stocks لإدارة الأصناف والمخزون وحركات الوارد والصادر.",
   applicationName: "Company Stocks",
   icons: {
-    icon: [{ url: "/company-stocks.svg", type: "image/svg+xml" }],
-    shortcut: ["/company-stocks.svg"],
-    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+    icon: [{ url: "/a_clean_high_resolution_modern_app_icon_style_gr.png", type: "image/png" }],
+    shortcut: ["/a_clean_high_resolution_modern_app_icon_style_gr.png"],
+    apple: [{ url: "/apple-touch-icon.png", type: "image/png" }],
   },
 };
 
