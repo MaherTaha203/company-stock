@@ -103,6 +103,29 @@ BEGIN
   IF v_unit <> 'piece' THEN
     RAISE EXCEPTION 'Unit changed despite historical movements: %', v_unit;
   END IF;
+
+  -- category + reorder_level: stored on items and surfaced by the balance view.
+  UPDATE public.items SET category = 'raw', reorder_level = 5.000 WHERE id = v_item_id;
+  DECLARE
+    v_category text;
+    v_reorder numeric;
+  BEGIN
+    SELECT category, reorder_level INTO v_category, v_reorder
+    FROM public.stock_balances WHERE id = v_item_id;
+    IF v_category <> 'raw' OR v_reorder <> 5.000 THEN
+      RAISE EXCEPTION 'Category/reorder not exposed by view: % / %', v_category, v_reorder;
+    END IF;
+  END;
+
+  BEGIN
+    UPDATE public.items SET reorder_level = -1 WHERE id = v_item_id;
+    RAISE EXCEPTION 'TEST_EXPECTED_REORDER_NONNEG';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM = 'TEST_EXPECTED_REORDER_NONNEG' THEN RAISE; END IF;
+    IF SQLERRM NOT LIKE '%items_reorder_level_nonneg_check%' THEN
+      RAISE EXCEPTION 'Unexpected error for negative reorder level: %', SQLERRM;
+    END IF;
+  END;
 END;
 $$;
 

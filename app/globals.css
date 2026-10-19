@@ -1,8 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap');
 
 :root{--ink:#172b27;--muted:#75827e;--line:#e4eae7;--canvas:#f5f7f6;--green:#176b4d;--green-dark:#124d39;--green-soft:#e7f4ed;--orange:#ad5a23;--orange-soft:#fff0e5;--blue:#286e9c;--blue-soft:#e9f3fa;--white:#fff}
 *{box-sizing:border-box}
-html,body{margin:0;min-height:100%;font-family:'IBM Plex Sans Arabic',Tahoma,Arial,sans-serif;background:var(--canvas);color:var(--ink)}
+html,body{margin:0;min-height:100%;font-family:'Cairo','IBM Plex Sans Arabic',Tahoma,Arial,sans-serif;background:var(--canvas);color:var(--ink)}
 button,input,select,textarea{font:inherit}
 button{cursor:pointer}
 button:disabled{opacity:.65;cursor:wait}
@@ -254,3 +254,94 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
     padding: 10px 8px;
   }
 }
+
+
+/* =====================================================================
+   Direction 4 — dense "ERP" treatment: teal accent, sticky/zebra tables,
+   density switch, and pagination so the grid scales to thousands of rows.
+   Presentation only — no change to data, API, or balance logic.
+   ===================================================================== */
+:root{
+  --green:#00897b;--green-dark:#00695c;--green-soft:#d7efec;
+  --teal-900:#0f2b30;--teal-800:#143f3a;--teal-700:#17564e;
+}
+.app-shell .sidebar{background:var(--teal-900)}
+.app-shell .nav-button:hover,.app-shell .nav-button.active{background:var(--teal-700)}
+.app-shell .nav-button.active{box-shadow:inset -3px 0 #4db6ac}
+.app-shell .brand-icon{background:var(--green-soft);color:var(--green-dark)}
+.app-shell .sidebar-footer{border-top-color:#2a5049;color:#a9c9c3}
+.status-dot{background:#4db6ac}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline-color:#4db6ac}
+.blue{background:var(--green-soft);color:var(--green-dark)}
+.stat-card{border-top:3px solid var(--green)}
+.stat-card:nth-child(3){border-top-color:var(--orange)}
+.stat-card:nth-child(4){border-top-color:#b4514f}
+
+/* dense, scannable data grid */
+.app-shell thead th{position:sticky;top:0;z-index:2;background:#eaf4f2;letter-spacing:.02em}
+.app-shell table{font-variant-numeric:tabular-nums}
+.app-shell tbody tr:nth-child(even){background:#f5faf9}
+.app-shell tbody tr:hover{background:#e7f4f2}
+.app-shell td{padding:var(--row-pad,12px) 13px;transition:none}
+.app-shell th{padding:10px 13px}
+.app-shell[data-density="compact"]{--row-pad:5px}
+.app-shell[data-density="compact"] th{padding:7px 13px;font-size:10.5px}
+.app-shell[data-density="compact"] td{font-size:11.5px}
+.app-shell[data-density="compact"] .stock-value{font-size:12px}
+.table-wrap.scroll{max-height:60vh;overflow:auto;border:1px solid var(--line);border-radius:10px}
+.table-wrap.scroll table{border-collapse:separate;border-spacing:0}
+.table-wrap.scroll td{border-bottom:1px solid #edf0ee}
+
+/* toolbar: density switch + page size */
+.topbar-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.density-toggle{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#fff}
+.density-toggle button{border:0;background:none;padding:9px 13px;font-size:12px;color:#55655f;min-height:42px}
+.density-toggle button.on{background:var(--green);color:#fff;font-weight:600}
+.page-size{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;background:#fff;color:var(--ink);min-height:40px}
+
+/* pagination footer */
+.pager{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:13px;font-size:12px;color:#5c6b64}
+.pager .sp{flex:1}
+.pager .count b{color:var(--green-dark);font-variant-numeric:tabular-nums}
+.pager .hint{color:#8b9791}
+.pbtn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 12px;font-size:12px;color:#45544e;min-height:38px}
+.pbtn:hover:not(:disabled){background:#f1f7f5}
+.pbtn:disabled{opacity:.45;cursor:default}
+
+@media(max-width:700px){
+  .topbar-actions{gap:7px}
+  .density-toggle button{padding:8px 10px}
+  .table-wrap.scroll{max-height:none;border:0;border-radius:0}
+  .app-shell thead th{position:static}
+}
+
+/* status filter chips + sortable headers + sparkline + status pills */
+.statchips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:13px}
+.statchip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 13px;font-size:12px;font-weight:600;color:#5c6b64;min-height:36px}
+.statchip.on{background:var(--green-soft);color:var(--green-dark);border-color:transparent}
+.app-shell th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
+.app-shell th.sortable:hover{color:var(--green-dark)}
+.app-shell th .ar{color:var(--green);font-size:10px}
+.spark{display:block}
+.num-cell{font-variant-numeric:tabular-nums;font-weight:600}
+.num-in{color:var(--green-dark)}.num-out{color:var(--orange)}
+.when-cell{color:#8b9791;font-size:.95em;direction:ltr;unicode-bidi:plaintext}
+.pill{font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;white-space:nowrap;display:inline-block}
+.p-ok{background:var(--green-soft);color:var(--green-dark)}
+.p-low{background:#fbeed2;color:#8a5a12}
+.p-zero{background:#fbe1e1;color:#b4514f}
+
+/* 6-up KPI strip */
+.stats-grid.kpi6{grid-template-columns:repeat(6,minmax(0,1fr))}
+@media(max-width:1100px){.stats-grid.kpi6{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:560px){.stats-grid.kpi6{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* grid toolbar (status chips + export) */
+.grid-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:13px}
+.grid-toolbar .statchips{margin-bottom:0}
+.grid-toolbar .export-btn{margin-inline-start:auto;min-height:36px;display:inline-flex;align-items:center;gap:6px}
+
+/* date inputs: consistent sizing and left-to-right value, no clipping */
+input[type="date"]{min-height:44px;line-height:1.4;direction:ltr;text-align:left;
+  -webkit-appearance:none;appearance:none;padding:10px 12px;box-sizing:border-box;max-width:100%}
+input[type="date"]::-webkit-calendar-picker-indicator{margin-inline-start:auto;opacity:.65;cursor:pointer}
