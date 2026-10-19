@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   icons: {
     icon: [{ url: "/company-stocks.svg", type: "image/svg+xml" }],
     shortcut: ["/company-stocks.svg"],
-    apple: [{ url: "/company-stocks.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
 };
 
