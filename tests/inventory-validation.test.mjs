@@ -46,6 +46,16 @@ test("validates item creation and partial updates", () => {
   assert.equal(validateItemFields({}, { partial: true }), null);
 });
 
+test("validates optional category and reorder level", () => {
+  assert.equal(validateItemFields({ code: "PK-1", name: "عبوات", unit: "حبة", opening_quantity: 0, category: "مواد خام", reorder_level: 10 }), null);
+  assert.equal(validateItemFields({ code: "PK-1", name: "عبوات", unit: "حبة", opening_quantity: 0, category: null, reorder_level: 0 }), null);
+  assert.match(validateItemFields({ code: "PK-1", name: "عبوات", unit: "حبة", opening_quantity: 0, category: "x".repeat(101) }), /التصنيف/);
+  assert.match(validateItemFields({ code: "PK-1", name: "عبوات", unit: "حبة", opening_quantity: 0, reorder_level: -1 }), /نقطة الطلب/);
+  assert.match(validateItemFields({ code: "PK-1", name: "عبوات", unit: "حبة", opening_quantity: 0, reorder_level: 1.2345 }), /نقطة الطلب/);
+  assert.equal(validateItemFields({ reorder_level: 5, category: "تغليف" }, { partial: true }), null);
+  assert.match(validateItemFields({ reorder_level: -2 }, { partial: true }), /نقطة الطلب/);
+});
+
 test("validates movement type, UUID, positive quantity, date and notes", () => {
   const valid = { item_id: itemId, movement_type: "in", quantity: 2.125, movement_date: "2026-10-18", notes: null };
   assert.equal(isValidUuid(itemId), true);

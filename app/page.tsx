@@ -6,6 +6,12 @@ type Item = {
   id: string; code: string; name: string; unit: string;
   opening_quantity: number; incoming_quantity: number;
   outgoing_quantity: number; current_quantity: number;
+  category: string | null; reorder_level: number;
+};
+const fmtDate = (iso: string | null) => {
+  if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return "—";
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
 };
 type Movement = {
   id: string; item_id: string; movement_type: "in" | "out";
@@ -52,6 +58,8 @@ export default function Home() {
   const [name, setName] = useState("");
   const [unit, setUnit] = useState("حبة");
   const [opening, setOpening] = useState("0");
+  const [category, setCategory] = useState("");
+  const [reorder, setReorder] = useState("0");
   const movementRequestRef = useRef<{ id: string; fingerprint: string } | null>(null);
   const [density, setDensity] = useState<"comfortable" | "compact">("comfortable");
   const [movePage, setMovePage] = useState(0);
@@ -112,15 +120,20 @@ export default function Home() {
   const filteredItems = useMemo(() => {
     const term = search.trim().toLocaleLowerCase();
     if (!term) return items;
-    return items.filter((item) => [item.name, item.code, item.unit].some((v) => v.toLocaleLowerCase().includes(term)));
+    return items.filter((item) => [item.name, item.code, item.unit, item.category ?? ""].some((v) => v.toLocaleLowerCase().includes(term)));
   }, [items, search]);
 
-  const stats = useMemo(() => ({
-    count: items.length,
-    incoming: movements.filter((m) => m.movement_type === "in" && m.movement_date === today()).reduce((sum, m) => sum + Number(m.quantity), 0),
-    outgoing: movements.filter((m) => m.movement_type === "out" && m.movement_date === today()).reduce((sum, m) => sum + Number(m.quantity), 0),
-    low: items.filter((item) => Number(item.current_quantity) <= 0).length,
-  }), [items, movements]);
+  const stats = useMemo(() => {
+    const td = today();
+    return {
+      count: items.length,
+      incoming: movements.filter((m) => m.movement_type === "in" && m.movement_date === td).reduce((sum, m) => sum + Number(m.quantity), 0),
+      outgoing: movements.filter((m) => m.movement_type === "out" && m.movement_date === td).reduce((sum, m) => sum + Number(m.quantity), 0),
+      movesToday: movements.filter((m) => m.movement_date === td).length,
+      lowCount: items.filter((i) => Number(i.current_quantity) > 0 && Number(i.current_quantity) <= Number(i.reorder_level)).length,
+      zeroCount: items.filter((i) => Number(i.current_quantity) <= 0).length,
+    };
+  }, [items, movements]);
 
   const dayKeys = useMemo(() => {
     const out: string[] = [];
@@ -193,11 +206,11 @@ export default function Home() {
     try {
       const response = await fetch("/api/items", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code, name, unit, opening_quantity: Number(opening) }),
+        body: JSON.stringify({ code, name, unit, opening_quantity: Number(opening), category: category.trim() || null, reorder_level: Number(reorder) }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "تعذرت إضافة الصنف");
-      setCode(""); setName(""); setOpening("0"); setNotice("تمت إضافة الصنف.");
+      setCode(""); setName(""); setOpening("0"); setCategory(""); setReorder("0"); setNotice("تمت إضافة الصنف.");
       await refresh();
       setFormItem(result.item.id);
     } catch (e) { setError(e instanceof Error ? e.message : "تعذرت إضافة الصنف"); }
@@ -211,9 +224,13 @@ export default function Home() {
     if (nextUnit === null) return;
     const nextCode = window.prompt("رمز الصنف", item.code);
     if (nextCode === null) return;
+    const nextCategory = window.prompt("التصنيف (اختياري)", item.category ?? "");
+    if (nextCategory === null) return;
+    const nextReorder = window.prompt("نقطة إعادة الطلب", String(item.reorder_level ?? 0));
+    if (nextReorder === null) return;
     setError(""); setNotice("");
     try {
-      const response = await fetch("/api/items/" + item.id, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: nextName, unit: nextUnit, code: nextCode }) });
+      const response = await fetch("/api/items/" + item.id, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: nextName, unit: nextUnit, code: nextCode, category: nextCategory.trim() || null, reorder_level: Number(nextReorder) }) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "تعذر تعديل الصنف");
       setNotice("تم تعديل بيانات الصنف."); await refresh();
@@ -258,11 +275,13 @@ export default function Home() {
       {loading && <div className="loading-bar">جارٍ تحميل البيانات...</div>}
 
       {tab === "dashboard" && <>
-        <div className="stats-grid">
-          <article className="stat-card"><div className="stat-symbol blue"><Icon name="package" size={20}/></div><span>عدد الأصناف</span><strong>{stats.count}</strong><small>صنف مسجل</small></article>
+        <div className="stats-grid kpi6">
+          <article className="stat-card"><div className="stat-symbol blue"><Icon name="package" size={20}/></div><span>عدد الأصناف</span><strong>{stats.count.toLocaleString("en-US")}</strong><small>صنف مسجل</small></article>
           <article className="stat-card"><div className="stat-symbol green"><Icon name="arrow-down" size={20}/></div><span>وارد اليوم</span><strong>{stats.incoming.toLocaleString("en-US")}</strong><small>وحدة</small></article>
           <article className="stat-card"><div className="stat-symbol amber"><Icon name="arrow-up" size={20}/></div><span>صادر اليوم</span><strong>{stats.outgoing.toLocaleString("en-US")}</strong><small>وحدة</small></article>
-          <article className="stat-card"><div className="stat-symbol slate"><Icon name="alert" size={20}/></div><span>أرصدة صفرية</span><strong>{stats.low}</strong><small>صنف رصيده صفر أو أقل</small></article>
+          <article className="stat-card"><div className="stat-symbol blue"><Icon name="history" size={20}/></div><span>حركات اليوم</span><strong>{stats.movesToday.toLocaleString("en-US")}</strong><small>عملية مسجّلة</small></article>
+          <article className="stat-card"><div className="stat-symbol amber"><Icon name="alert" size={20}/></div><span>تحت نقطة الطلب</span><strong>{stats.lowCount.toLocaleString("en-US")}</strong><small>يلزم إعادة طلب</small></article>
+          <article className="stat-card"><div className="stat-symbol slate"><Icon name="alert" size={20}/></div><span>أصناف نافدة</span><strong>{stats.zeroCount.toLocaleString("en-US")}</strong><small>رصيد صفري</small></article>
         </div>
         <div className="quick-actions">
           <button className="action-card inbound" onClick={() => { setTab("in"); setError(""); setNotice(""); }}><span className="action-icon"><Icon name="arrow-down" size={23}/></span><span><strong>تسجيل وارد جديد</strong><small>إضافة كمية إلى المخزون</small></span><b><Icon name="arrow-left" size={17}/></b></button>
@@ -297,7 +316,9 @@ export default function Home() {
             <label>رمز الصنف <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="مثال: PK-001" required /></label>
             <label>اسم الصنف <input value={name} onChange={(e) => setName(e.target.value)} placeholder="مثال: عبوات فارغة" required /></label>
             <label>وحدة القياس <select value={unit} onChange={(e) => setUnit(e.target.value)}><option>حبة</option><option>قطعة</option><option>كرتونة</option><option>كغم</option><option>غرام</option><option>لتر</option><option>متر</option><option>رول</option></select></label>
+            <label>التصنيف <input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="مثال: مواد خام (اختياري)" /></label>
             <label>الرصيد الافتتاحي <input type="number" min="0" step="0.001" value={opening} onChange={(e) => setOpening(e.target.value)} required /><small className="field-help">الكمية الموجودة فعلياً عند بدء استخدام النظام.</small></label>
+            <label>نقطة إعادة الطلب <input type="number" min="0" step="0.001" value={reorder} onChange={(e) => setReorder(e.target.value)} /><small className="field-help">يُنبّه النظام عندما ينزل الرصيد إلى هذا الحد أو أقل.</small></label>
             <button className="primary-button" type="submit" disabled={saving}>{saving ? "جارٍ الحفظ..." : "إضافة الصنف"}</button>
           </form>
         </section>
@@ -307,7 +328,7 @@ export default function Home() {
       {tab === "movements" && <section className="panel"><div className="panel-heading"><div><h2>حركة المواد</h2><p>عرض عمليات الوارد والصادر المسجلة</p></div></div>
         <div className="filters"><label>نوع الحركة<select value={movementFilter} onChange={(e) => setMovementFilter(e.target.value)}><option value="all">كل الحركات</option><option value="in">وارد فقط</option><option value="out">صادر فقط</option></select></label><label>من تاريخ<input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}/></label><label>إلى تاريخ<input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}/></label><button className="secondary-button" onClick={() => { setMovementFilter("all"); setDateFrom(""); setDateTo(""); }}>مسح التصفية</button></div>
         <div className="table-wrap scroll"><table><thead><tr><th>التاريخ</th><th>رمز الصنف</th><th>الصنف</th><th>النوع</th><th>الكمية</th><th>ملاحظات</th></tr></thead><tbody>
-          {pagedMovements.map((m) => <tr key={m.id}><td>{m.movement_date}</td><td>{m.items?.code || "—"}</td><td>{m.items?.name || "صنف"}</td><td><span className={"movement-badge " + (m.movement_type === "in" ? "in-badge" : "out-badge")}>{m.movement_type === "in" ? "وارد" : "صادر"}</span></td><td className="quantity-cell">{Number(m.quantity).toLocaleString("en-US")} {m.items?.unit || ""}</td><td>{m.notes || "—"}</td></tr>)}
+          {pagedMovements.map((m) => <tr key={m.id}><td className="when-cell">{fmtDate(m.movement_date)}</td><td>{m.items?.code || "—"}</td><td>{m.items?.name || "صنف"}</td><td><span className={"movement-badge " + (m.movement_type === "in" ? "in-badge" : "out-badge")}>{m.movement_type === "in" ? "وارد" : "صادر"}</span></td><td className="quantity-cell">{Number(m.quantity).toLocaleString("en-US")} {m.items?.unit || ""}</td><td>{m.notes || "—"}</td></tr>)}
           {visibleMovements.length === 0 && <tr><td colSpan={6}><div className="empty-table">لا توجد حركات مطابقة.</div></td></tr>}
         </tbody></table></div>
         <div className="pager">
@@ -343,9 +364,24 @@ function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
   }
 }
 
-type SortKey = "code" | "name" | "incoming" | "outgoing" | "current";
+type SortKey = "code" | "name" | "category" | "opening" | "incoming" | "outgoing" | "current" | "reorder";
 type ItemMeta = Map<string, { last: string | null; trend: number[] }>;
 const fmt = (n: number) => Number(n).toLocaleString("en-US");
+const itemStatus = (it: Item): "ok" | "low" | "zero" =>
+  Number(it.current_quantity) <= 0 ? "zero" : Number(it.current_quantity) <= Number(it.reorder_level) ? "low" : "ok";
+const STATUS_LABEL = { ok: "متوفر", low: "منخفض", zero: "نافد" } as const;
+
+function exportItemsCsv(items: Item[], meta: ItemMeta) {
+  const head = ["الرمز", "الصنف", "التصنيف", "الوحدة", "افتتاحي", "وارد", "صادر", "الرصيد", "نقطة الطلب", "الحالة", "آخر حركة"];
+  const esc = (v: string | number) => { const s = String(v); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const lines = items.map((it) => [it.code, it.name, it.category ?? "", it.unit, it.opening_quantity, it.incoming_quantity, it.outgoing_quantity, it.current_quantity, it.reorder_level, STATUS_LABEL[itemStatus(it)], meta.get(it.id)?.last ?? ""].map(esc).join(","));
+  const csv = "﻿" + [head.join(","), ...lines].join("\n");
+  try {
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const a = document.createElement("a"); a.href = url; a.download = "inventory.csv"; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch {}
+}
 
 function Spark({ trend }: { trend: number[] }) {
   const max = Math.max(...trend, 1), w = 58, h = 18, bw = w / trend.length;
@@ -359,14 +395,14 @@ function ItemsTable({ items, meta, onEdit, onDelete }: { items: Item[]; meta: It
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(50);
   const [sort, setSort] = useState<{ key: SortKey; dir: number } | null>(null);
-  const [stat, setStat] = useState<"all" | "ok" | "zero">("all");
+  const [stat, setStat] = useState<"all" | "ok" | "low" | "zero">("all");
 
   const rows = useMemo(() => {
-    let r = items.filter((it) => stat === "all" ? true : stat === "zero" ? Number(it.current_quantity) <= 0 : Number(it.current_quantity) > 0);
+    let r = stat === "all" ? items : items.filter((it) => itemStatus(it) === stat);
     if (sort) {
       const k = sort.key;
-      const val = (it: Item) => k === "code" ? it.code : k === "name" ? it.name
-        : Number(k === "incoming" ? it.incoming_quantity : k === "outgoing" ? it.outgoing_quantity : it.current_quantity);
+      const val = (it: Item) => k === "code" ? it.code : k === "name" ? it.name : k === "category" ? (it.category ?? "")
+        : Number(k === "opening" ? it.opening_quantity : k === "incoming" ? it.incoming_quantity : k === "outgoing" ? it.outgoing_quantity : k === "reorder" ? it.reorder_level : it.current_quantity);
       r = [...r].sort((a, b) => { const av = val(a), bv = val(b); return (av > bv ? 1 : av < bv ? -1 : 0) * sort.dir; });
     }
     return r;
@@ -380,37 +416,47 @@ function ItemsTable({ items, meta, onEdit, onDelete }: { items: Item[]; meta: It
   const arrow = (key: SortKey) => sort?.key === key ? <span className="ar">{sort.dir > 0 ? " ▲" : " ▼"}</span> : null;
 
   return <>
-    <div className="statchips" role="group" aria-label="تصفية حسب الحالة">
-      <button type="button" className={"statchip " + (stat === "all" ? "on" : "")} onClick={() => setStat("all")}>الكل</button>
-      <button type="button" className={"statchip " + (stat === "ok" ? "on" : "")} onClick={() => setStat("ok")}>متوفر</button>
-      <button type="button" className={"statchip " + (stat === "zero" ? "on" : "")} onClick={() => setStat("zero")}>نافد</button>
+    <div className="grid-toolbar">
+      <div className="statchips" role="group" aria-label="تصفية حسب الحالة">
+        <button type="button" className={"statchip " + (stat === "all" ? "on" : "")} onClick={() => setStat("all")}>الكل</button>
+        <button type="button" className={"statchip " + (stat === "ok" ? "on" : "")} onClick={() => setStat("ok")}>متوفر</button>
+        <button type="button" className={"statchip " + (stat === "low" ? "on" : "")} onClick={() => setStat("low")}>منخفض</button>
+        <button type="button" className={"statchip " + (stat === "zero" ? "on" : "")} onClick={() => setStat("zero")}>نافد</button>
+      </div>
+      <button type="button" className="secondary-button export-btn" onClick={() => exportItemsCsv(rows, meta)} disabled={rows.length === 0}>⇩ تصدير CSV</button>
     </div>
     <div className="table-wrap scroll"><table><thead><tr>
       <th className="sortable" onClick={() => toggleSort("code")}>الرمز{arrow("code")}</th>
       <th className="sortable" onClick={() => toggleSort("name")}>اسم الصنف{arrow("name")}</th>
+      <th className="sortable" onClick={() => toggleSort("category")}>التصنيف{arrow("category")}</th>
       <th>الوحدة</th>
+      <th className="sortable" onClick={() => toggleSort("opening")}>افتتاحي{arrow("opening")}</th>
       <th className="sortable" onClick={() => toggleSort("incoming")}>وارد{arrow("incoming")}</th>
       <th className="sortable" onClick={() => toggleSort("outgoing")}>صادر{arrow("outgoing")}</th>
-      <th className="sortable" onClick={() => toggleSort("current")}>الرصيد الحالي{arrow("current")}</th>
+      <th className="sortable" onClick={() => toggleSort("current")}>الرصيد{arrow("current")}</th>
+      <th className="sortable" onClick={() => toggleSort("reorder")}>نقطة الطلب{arrow("reorder")}</th>
       <th>اتجاه ٧ أيام</th>
-      <th>آخر حركة</th>
       <th>الحالة</th>
+      <th>آخر حركة</th>
       <th>إجراءات</th>
     </tr></thead><tbody>
-    {paged.map((item) => { const m = meta.get(item.id); const zero = Number(item.current_quantity) <= 0;
+    {paged.map((item) => { const m = meta.get(item.id); const st = itemStatus(item);
       return <tr key={item.id}>
         <td><span className="item-code">{item.code}</span></td>
         <td className="item-name">{item.name}</td>
+        <td>{item.category || "—"}</td>
         <td>{item.unit}</td>
+        <td className="num-cell">{fmt(item.opening_quantity)}</td>
         <td className="num-cell num-in">{fmt(item.incoming_quantity)}</td>
         <td className="num-cell num-out">{fmt(item.outgoing_quantity)}</td>
-        <td><span className={"stock-value " + (zero ? "zero-stock" : "")}>{fmt(item.current_quantity)}</span></td>
+        <td><span className={"stock-value " + (st === "zero" ? "zero-stock" : "")}>{fmt(item.current_quantity)}</span></td>
+        <td className="num-cell">{fmt(item.reorder_level)}</td>
         <td>{m ? <Spark trend={m.trend}/> : "—"}</td>
-        <td className="when-cell">{m?.last || "—"}</td>
-        <td><span className={"pill " + (zero ? "p-zero" : "p-ok")}>{zero ? "نافد" : "متوفر"}</span></td>
+        <td><span className={"pill p-" + st}>{STATUS_LABEL[st]}</span></td>
+        <td className="when-cell">{fmtDate(m?.last ?? null)}</td>
         <td><div className="row-actions"><button onClick={() => onEdit(item)} className="small-button" title="تعديل" aria-label={"تعديل " + item.name}><Icon name="edit" size={15}/><span>تعديل</span></button><button onClick={() => onDelete(item)} className="small-button delete-button" title="حذف" aria-label={"حذف " + item.name}><Icon name="trash" size={15}/><span>حذف</span></button></div></td>
       </tr>; })}
-    {rows.length === 0 && <tr><td colSpan={10}><div className="empty-table">لا توجد أصناف مطابقة.</div></td></tr>}
+    {rows.length === 0 && <tr><td colSpan={13}><div className="empty-table">لا توجد أصناف مطابقة.</div></td></tr>}
   </tbody></table></div>
     {rows.length > 0 && <div className="pager">
       <span className="count">عرض <b>{start + 1}–{Math.min(start + size, rows.length)}</b> من <b>{rows.length.toLocaleString("en-US")}</b> صنف</span>

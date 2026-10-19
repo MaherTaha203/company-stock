@@ -26,10 +26,12 @@ export async function POST(request: Request) {
     const name = String(body.name ?? "").trim();
     const unit = String(body.unit ?? "").trim();
     const opening = Number(body.opening_quantity ?? 0);
-    const validationError = validateItemFields({ code, name, unit, opening_quantity: opening });
+    const category = body.category == null ? null : String(body.category).trim() || null;
+    const reorder = Number(body.reorder_level ?? 0);
+    const validationError = validateItemFields({ code, name, unit, opening_quantity: opening, category, reorder_level: reorder });
     if (validationError) return NextResponse.json({ error: validationError }, { status: 400 });
     const db = getSupabaseAdmin();
-    const { data, error } = await db.from("items").insert({ code, name, unit, opening_quantity: opening }).select("id,code,name,unit,opening_quantity").single();
+    const { data, error } = await db.from("items").insert({ code, name, unit, opening_quantity: opening, category, reorder_level: reorder }).select("id,code,name,unit,opening_quantity,category,reorder_level").single();
     if (error) {
       if (error.code === "23505") return NextResponse.json({ error: "رمز الصنف مستخدم مسبقاً." }, { status: 409 });
       throw error;

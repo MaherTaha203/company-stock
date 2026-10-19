@@ -328,4 +328,20 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .when-cell{color:#8b9791;font-size:.95em;direction:ltr;unicode-bidi:plaintext}
 .pill{font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;white-space:nowrap;display:inline-block}
 .p-ok{background:var(--green-soft);color:var(--green-dark)}
+.p-low{background:#fbeed2;color:#8a5a12}
 .p-zero{background:#fbe1e1;color:#b4514f}
+
+/* 6-up KPI strip */
+.stats-grid.kpi6{grid-template-columns:repeat(6,minmax(0,1fr))}
+@media(max-width:1100px){.stats-grid.kpi6{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:560px){.stats-grid.kpi6{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* grid toolbar (status chips + export) */
+.grid-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:13px}
+.grid-toolbar .statchips{margin-bottom:0}
+.grid-toolbar .export-btn{margin-inline-start:auto;min-height:36px;display:inline-flex;align-items:center;gap:6px}
+
+/* date inputs: consistent sizing and left-to-right value, no clipping */
+input[type="date"]{min-height:44px;line-height:1.4;direction:ltr;text-align:left;
+  -webkit-appearance:none;appearance:none;padding:10px 12px;box-sizing:border-box;max-width:100%}
+input[type="date"]::-webkit-calendar-picker-indicator{margin-inline-start:auto;opacity:.65;cursor:pointer}
