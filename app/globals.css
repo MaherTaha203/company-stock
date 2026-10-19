@@ -352,3 +352,155 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 input[type="date"]{min-height:44px;line-height:1.4;direction:ltr;text-align:left;
   -webkit-appearance:none;appearance:none;padding:10px 12px;box-sizing:border-box;max-width:100%}
 input[type="date"]::-webkit-calendar-picker-indicator{margin-inline-start:auto;opacity:.65;cursor:pointer}
+
+
+/* Responsive refinement: compact inventory cards and reliable touch targets. */
+.stat-card {
+  padding: 15px 15px 13px;
+  gap: 6px;
+  border-radius: 12px;
+}
+.stat-symbol {
+  width: 32px;
+  height: 32px;
+  font-size: 19px;
+  margin-bottom: 1px;
+}
+.stat-card strong {
+  font-size: clamp(21px, 1.7vw, 25px);
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.action-card {
+  min-height: 76px;
+}
+button,
+[role="button"],
+.nav-button,
+.statchip,
+.density-toggle button,
+.pbtn,
+.small-button,
+.text-button,
+.grid-toolbar .export-btn {
+  touch-action: manipulation;
+}
+button:not(.nav-button),
+.pbtn,
+.small-button,
+.statchip,
+.text-button,
+.grid-toolbar .export-btn {
+  min-height: 44px;
+}
+.small-button {
+  padding: 7px 10px;
+  white-space: nowrap;
+}
+.text-button {
+  justify-content: center;
+  padding: 7px 9px;
+}
+.statchip {
+  padding: 7px 12px;
+}
+input,
+select,
+textarea {
+  max-width: 100%;
+  scroll-margin-block: 16px;
+}
+.app-shell,
+.main-area,
+.panel,
+.table-wrap,
+.form-layout,
+.items-layout {
+  min-width: 0;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+body {
+  overflow-wrap: anywhere;
+}
+@media (min-width: 701px) {
+  .stats-grid { gap: 12px; }
+  .stat-card { padding: 14px; }
+  .stat-card strong { font-size: clamp(21px, 1.55vw, 25px); }
+  .panel { padding: clamp(15px, 1.5vw, 21px); }
+}
+@media (max-width: 700px) {
+  .stats-grid { gap: 8px; }
+  .stat-card {
+    padding: 11px 12px;
+    gap: 5px;
+    border-radius: 10px;
+  }
+  .stat-symbol {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    font-size: 17px;
+  }
+  .stat-card strong {
+    font-size: clamp(19px, 5.3vw, 22px);
+    line-height: 1.2;
+  }
+  .stat-card > span { line-height: 1.4; }
+  .stat-card small { line-height: 1.35; }
+  .action-card {
+    min-height: 68px;
+    padding: 10px 11px;
+  }
+  .refresh-button,
+  .secondary-button,
+  .primary-button,
+  .density-toggle button,
+  .pbtn,
+  .small-button,
+  .statchip,
+  .text-button {
+    min-height: 44px;
+  }
+  .nav-button { min-height: 52px; }
+  .grid-toolbar { gap: 8px; align-items: stretch; }
+  .grid-toolbar .export-btn { margin-inline-start: 0; }
+  .pager { gap: 8px; }
+  .pager .sp { flex-basis: 100%; height: 0; }
+  .table-wrap { max-width: 100%; }
+  .app-shell table { min-width: 620px; }
+  .movement-form-panel .data-form input,
+  .movement-form-panel .data-form select,
+  .movement-form-panel .data-form textarea,
+  .filters input,
+  .filters select { font-size: 16px; }
+}
+@media (max-width: 380px) {
+  .main-area { padding-inline: 8px; }
+  .topbar { gap: 8px; }
+  .topbar h1 { font-size: 20px; }
+  .refresh-button { min-width: 44px; justify-content: center; }
+  .stats-grid { gap: 7px; }
+  .stat-card { padding: 10px; }
+  .stat-card strong { font-size: 19px; }
+  .panel { padding: 11px; }
+  .panel-heading { align-items: flex-start; }
+  .panel-heading .text-button { flex-shrink: 0; }
+  .nav-list { gap: 1px; }
+  .nav-button { padding-inline: 1px; font-size: 9px; }
+  .nav-icon { font-size: 17px; }
+}
+@media (max-width: 700px) and (orientation: landscape) and (max-height: 500px) {
+  .app-shell { padding-bottom: calc(58px + env(safe-area-inset-bottom)); }
+  .sidebar { padding-top: 4px; padding-bottom: calc(4px + env(safe-area-inset-bottom)); }
+  .nav-list { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .nav-button { min-height: 46px; flex-direction: row; gap: 5px; font-size: 10px; }
+  .nav-icon { font-size: 17px; }
+  .main-area { padding-top: 12px; }
+  .topbar { margin-bottom: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}
