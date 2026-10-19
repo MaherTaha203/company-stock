@@ -548,3 +548,9 @@ body {
   .stat-card > span { font-size: 10px; }
   .stat-card strong { font-size: 18px !important; }
 }
+
+
+/* Company Stocks brand identity */
+.brand-logo{width:43px;height:43px;display:block;flex:0 0 43px;object-fit:contain;border-radius:12px}
+.sidebar{background:#0B2D5B}
+.app-shell .brand-icon{background:#0B2D5B;color:#fff}
