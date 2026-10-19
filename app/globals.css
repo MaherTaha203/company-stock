@@ -262,8 +262,12 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
    Presentation only — no change to data, API, or balance logic.
    ===================================================================== */
 :root{
-  --green:#00897b;--green-dark:#00695c;--green-soft:#d7efec;
-  --teal-900:#0f2b30;--teal-800:#143f3a;--teal-700:#17564e;
+  /* Formal, energetic palette: deep teal foundation with distinct semantic accents. */
+  --green:#087f5b;--green-dark:#066647;--green-soft:#e2f5ec;
+  --teal-900:#142d4e;--teal-800:#1b4268;--teal-700:#176b78;
+  --orange:#b45309;--orange-soft:#fff1df;
+  --blue:#315bb5;--blue-soft:#eaf0ff;
+  --ink:#172b42;--muted:#617286;--line:#dce5ed;--canvas:#f4f7fb;
 }
 .app-shell .sidebar{background:var(--teal-900)}
 .app-shell .nav-button:hover,.app-shell .nav-button.active{background:var(--teal-700)}
@@ -278,10 +282,10 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .stat-card:nth-child(4){border-top-color:#b4514f}
 
 /* dense, scannable data grid */
-.app-shell thead th{position:sticky;top:0;z-index:2;background:#eaf4f2;letter-spacing:.02em}
+.app-shell thead th{position:sticky;top:0;z-index:2;background:#eaf1f8;letter-spacing:.02em}
 .app-shell table{font-variant-numeric:tabular-nums}
-.app-shell tbody tr:nth-child(even){background:#f5faf9}
-.app-shell tbody tr:hover{background:#e7f4f2}
+.app-shell tbody tr:nth-child(even){background:#f7f9fc}
+.app-shell tbody tr:hover{background:#e8f4f7}
 .app-shell td{padding:var(--row-pad,12px) 13px;transition:none}
 .app-shell th{padding:10px 13px}
 .app-shell[data-density="compact"]{--row-pad:5px}
@@ -296,7 +300,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .topbar-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
 .density-toggle{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#fff}
 .density-toggle button{border:0;background:none;padding:9px 13px;font-size:12px;color:#55655f;min-height:42px}
-.density-toggle button.on{background:var(--green);color:#fff;font-weight:600}
+.density-toggle button.on{background:var(--teal-700);color:#fff;font-weight:600}
 .page-size{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;background:#fff;color:var(--ink);min-height:40px}
 
 /* pagination footer */
@@ -318,7 +322,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 /* status filter chips + sortable headers + sparkline + status pills */
 .statchips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:13px}
 .statchip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 13px;font-size:12px;font-weight:600;color:#5c6b64;min-height:36px}
-.statchip.on{background:var(--green-soft);color:var(--green-dark);border-color:transparent}
+.statchip.on{background:#dff3f1;color:#075e66;border-color:#b5e2df}
 .app-shell th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
 .app-shell th.sortable:hover{color:var(--green-dark)}
 .app-shell th .ar{color:var(--green);font-size:10px}
