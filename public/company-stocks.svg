@@ -1,1 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title"><title>Company Stocks</title><rect width="64" height="64" rx="14" fill="#0B2D5B"/><path d="M28 13H18a7 7 0 0 0-7 7v24a7 7 0 0 0 7 7h10" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/><path d="M39 13h7a7 7 0 0 1 7 7v2M39 51h7a7 7 0 0 0 7-7v-2M51 29H37a6 6 0 0 1 0-12h9" fill="none" stroke="#10B981" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><path d="M24 30h8v8h-8zM34 39h8v8h-8z" fill="#10B981" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Company Stocks</title>
+  <desc id="desc">A compact navy app icon with a white C, an emerald S, and an inventory-grid motif.</desc>
+  <rect width="64" height="64" rx="14" fill="#0B2D5B"/>
+  <path d="M29 15H21.5A10.5 10.5 0 0 0 11 25.5v13A10.5 10.5 0 0 0 21.5 49H29" fill="none" stroke="#FFFFFF" stroke-width="6.5" stroke-linecap="round"/>
+  <path d="M49 19H39.5a7 7 0 0 0 0 14h2a7 7 0 0 1 0 14H32" fill="none" stroke="#10B981" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M25 28h7v7h-7zM34 28h7v7h-7zM25 37h7v7h-7z" fill="#10B981" stroke="#0B2D5B" stroke-width="1.2" stroke-linejoin="round"/>
+</svg>
