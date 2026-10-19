@@ -259,7 +259,7 @@ export default function Home() {
 
   return <main className="app-shell" data-density={density}>
     <aside className="sidebar">
-      <div className="brand"><div className="brand-icon"><Icon name="package" size={24}/></div><div><strong>مخزون المواد</strong><span>إدارة الوارد والصادر</span></div></div>
+      <div className="brand"><img className="brand-logo" src="/company-stocks.svg" alt="Company Stocks" width={43} height={43}/><div><strong>Company Stocks</strong><span>إدارة المخزون</span></div></div>
       <nav className="nav-list" aria-label="القائمة الرئيسية">
         {nav.map((entry) => <button key={entry.id} className={"nav-button " + (tab === entry.id ? "active" : "")} onClick={() => { setTab(entry.id); setError(""); setNotice(""); }}>
           <span className="nav-icon"><Icon name={entry.icon} size={21}/></span><span>{entry.label}</span>
